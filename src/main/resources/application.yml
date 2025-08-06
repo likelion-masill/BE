@@ -1,4 +1,9 @@
 spring:
+
+  server:
+    servlet:
+      context-path: /api
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -7,13 +12,31 @@ spring:
   sql:
     init:
       mode: never
+
   jpa:
+    hibernate:
+      ddl-auto: create
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
         show_sql: true
         format_sql: true
         use_sql_comments: true
-        hbm2ddl:
-          auto: create
         default_batch_fetch_size: 1000
+
+  jwt:
+    secret: e253645a97f98c5ac9d94c7cb6fe47adef76834f1ebf312d9617564096f443ad
+    access-token-expire-time: 1800000
+    refresh-token-expire-time: 172800000
+
+  swagger:
+    auth:
+      username: root
+      password: 0000
+
+
+#CORS 설정
+cors:
+  allowed-origins: http://localhost:5173
