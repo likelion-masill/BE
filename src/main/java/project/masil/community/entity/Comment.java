@@ -3,8 +3,6 @@ package project.masil.community.entity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -18,7 +16,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import project.masil.community.enums.PostType;
+import project.masil.global.common.BaseTimeEntity;
 import project.masil.user.entity.User;
 
 @Entity
@@ -27,22 +25,15 @@ import project.masil.user.entity.User;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Comment {
+public class Comment extends BaseTimeEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long commentId;
-
-  @Enumerated(EnumType.STRING)
-  private PostType postType;
+  private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "post_id")
+  @JoinColumn(name = "post_id", nullable = false)
   private Post post;
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "club_id")
-  private Club club;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "parent_comment_id")
@@ -56,5 +47,5 @@ public class Comment {
   private User user;
 
   @Column(nullable = false)
-  private String comment;
+  private String content;
 }

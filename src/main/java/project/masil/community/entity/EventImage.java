@@ -13,24 +13,26 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import project.masil.global.common.BaseTimeEntity;
 
 @Entity
-@Table(name = "post_images")
+@Table(name = "event_images")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PostImage {
+public class EventImage extends BaseTimeEntity {
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long postImageId;
+  private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "post_id", nullable = false)
-  private Post post;
+  @JoinColumn(name = "event_id", nullable = false)
+  private EventPost eventPost;
 
   @Column(nullable = false)
-  private Integer Order;
+  private int sequence;
 
   @Column(nullable = false)
   private String url;
