@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import project.masil.global.common.BaseTimeEntity;
 
 @Entity
 @Getter
@@ -18,11 +19,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Table(name = "regions")
-public class Region {
+public class Region extends BaseTimeEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long regionId;
+  private Long id;
 
   @Column(nullable = false)
   private String sido;

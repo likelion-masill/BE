@@ -2,87 +2,50 @@ package project.masil.community.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import project.masil.community.enums.Category;
+import project.masil.global.common.BaseTimeEntity;
 import project.masil.user.entity.User;
 
 @Entity
-@Table(name = "posts")
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class Post {
+@Inheritance(strategy = InheritanceType.JOINED)
+public abstract class Post extends BaseTimeEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long postId;
+  private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "userId", nullable = false)
+  @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "regionId", nullable = false)
-  private Region region;
-
-  @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private Category category;
-
-  @Column(nullable = false, length = 255)
   private String title;
 
-  @Column(nullable = false, length = 255)
+  @Column(nullable = false)
   private String location;
-
-  @Column(nullable = false)
-  private LocalDateTime startAt;
-
-  @Column(nullable = false)
-  private LocalDateTime endAt;
 
   @Column(nullable = false, columnDefinition = "TEXT")
   private String content;
 
-  @Column(columnDefinition = "TEXT")
-  private String summary;
-
   @Column(nullable = false)
-  private int likeCount = 0;
+  private int favoriteCount = 0;
 
   @Column(nullable = false)
   private int commentCount = 0;
 
-  @Column(nullable = false)
-  private int viewCount = 0;
-
-  @Column(nullable = false)
-  private String coverImage;
-
-  @OneToMany(mappedBy = "post", fetch = FetchType.LAZY)
-  private List<PostImage> images;
-
-  @OneToMany(mappedBy = "post", fetch = FetchType.LAZY)
-  private List<Club> clubs;
-
-  @OneToMany(mappedBy = "post", fetch = FetchType.LAZY)
+  @OneToMany(mappedBy = "post")
   private List<Comment> comments;
 
+  @OneToMany(mappedBy = "post")
+  private List<Favorite> favorites;
 
 }

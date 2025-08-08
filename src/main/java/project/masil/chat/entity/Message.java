@@ -9,11 +9,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import project.masil.global.common.BaseTimeEntity;
 import project.masil.user.entity.User;
 
 @Entity
@@ -22,11 +22,11 @@ import project.masil.user.entity.User;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Message {
+public class Message extends BaseTimeEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long messageId;
+  private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "room_id", nullable = false)
@@ -36,10 +36,7 @@ public class Message {
   @JoinColumn(name = "sender_id", nullable = false)
   private User sender;
 
-  @Column(nullable = false)
+  @Column(nullable = false, columnDefinition = "TEXT")
   private String content;
-
-  @Column(nullable = false)
-  private LocalDateTime sentAt;
 
 }
