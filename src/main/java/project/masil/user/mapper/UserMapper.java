@@ -12,6 +12,7 @@ public class UserMapper {
   public SignUpResponse toSignUpResponse(User user) {
     return SignUpResponse.builder()
         .userId(user.getId())
+        .nickname(user.getUsername())
         .email(user.getEmail())
         .build();
   }

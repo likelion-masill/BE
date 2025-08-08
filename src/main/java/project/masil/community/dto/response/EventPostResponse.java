@@ -3,6 +3,7 @@ package project.masil.community.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
@@ -30,11 +31,12 @@ public class EventPostResponse {
   @Schema(description = "이벤트 장소", example = "서울특별시 성북구 서경로 124")
   private String location;
 
-  @Schema(description = "이벤트 시작 날짜", example = "2025-08-08T10:00:00")
-  private LocalDateTime startDate;
 
-  @Schema(description = "종료 날짜", example = "2025-09-01T18:00:00")
-  private LocalDateTime endDate;
+  @Schema(description = "이벤트 시작 날짜 (KST)", example = "2025-08-08T19:00:00")
+  private LocalDateTime startAt;
+
+  @Schema(description = "이벤트 종료 날짜 (KST)", example = "2025-09-01T18:00:00")
+  private LocalDateTime endAt;
 
   @Schema(description = "AI 이벤트 요약", example = "성북 청년의 날 이벤트 요약")
   private String summary;
