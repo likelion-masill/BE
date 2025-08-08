@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 @Entity
@@ -24,8 +25,8 @@ public class ClubPost extends Post {
   @JoinColumn(name = "event_id", nullable = false)
   private EventPost eventPost;
 
+  @Setter
   @Column(name = "start_at", nullable = false)
   private LocalDateTime startAt;
-
 
 }
