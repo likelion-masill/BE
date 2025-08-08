@@ -17,9 +17,11 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.ColumnDefault;
 import project.masil.community.enums.EventType;
 
 @Entity
@@ -48,12 +50,14 @@ public class EventPost extends Post {
   private String summary;
 
   @Column(nullable = false)
-  private int viewCount = 0;
+  @ColumnDefault("0")
+  private int viewCount;
 
   @ElementCollection
   @CollectionTable(name = "event_images", joinColumns = @JoinColumn(name = "event_id"))
   @Column(name = "image_url", nullable = false)         // 값 컬럼 이름 지정
   @OrderColumn(name = "sequence")                       // 순서(인덱스) 컬럼 저장
+  @Builder.Default
   private List<String> eventImages = new ArrayList<>();
 
   @OneToMany(mappedBy = "eventPost", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)

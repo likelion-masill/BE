@@ -33,7 +33,10 @@ public class SecurityConfig {
         // CORS 설정 활성화(보통은 CORS 설정 활성화 하지 않음. 서버에서 NginX로 CORS 검증)
         .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
         // HTTP Basic 인증 기본 설정
-        .httpBasic(Customizer.withDefaults())
+//        .httpBasic(Customizer.withDefaults())
+        // ★ Basic/폼 로그인 완전 비활성화 → 브라우저 팝업 방지
+        .httpBasic(AbstractHttpConfigurer::disable)
+        .formLogin(AbstractHttpConfigurer::disable)
         // 세션을 생성하지 않음 (JWT 사용으로 인한 Stateless 설정)
         .sessionManagement(
         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -49,7 +52,7 @@ public class SecurityConfig {
                     .permitAll()
                     // 그 외 모든 요청은 모두 인증 필요
                     .anyRequest()
-                    .authenticated())
+                    .permitAll()) //수정 필요
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }

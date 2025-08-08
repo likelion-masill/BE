@@ -39,7 +39,7 @@ public class User extends BaseTimeEntity {
   private String password;
 
   @JsonIgnore
-  @Column(name = "refresh_token", nullable = false)
+  @Column(name = "refresh_token")
   private String refreshToken;
 
   @Column(name = "role", nullable = false)
@@ -50,6 +50,15 @@ public class User extends BaseTimeEntity {
 //  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
 //  @Builder.Default
 //  private List<Favorite> likesList = new ArrayList<>();
+
+//  @Column
+//  private boolean isBusinessVerified;
+//
+//  @Column
+//  private String profileImageUrl;
+//
+//  @Column
+//  private String phoneNumber;
 
   public void createRefreshToken(String refreshToken) {
     this.refreshToken = refreshToken;

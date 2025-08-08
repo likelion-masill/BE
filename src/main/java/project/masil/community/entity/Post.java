@@ -17,6 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.ColumnDefault;
 import project.masil.global.common.BaseTimeEntity;
 import project.masil.user.entity.User;
 
@@ -49,10 +50,12 @@ public abstract class Post extends BaseTimeEntity {
   private String content;
 
   @Column(nullable = false)
-  private int favoriteCount = 0;
+  @ColumnDefault("0")
+  private int favoriteCount;
 
   @Column(nullable = false)
-  private int commentCount = 0;
+  @ColumnDefault("0")
+  private int commentCount;
 
   @OneToMany(mappedBy = "post")
   private List<Comment> comments;
@@ -79,4 +82,5 @@ public abstract class Post extends BaseTimeEntity {
       this.commentCount--;
     }
   }
+
 }

@@ -31,12 +31,25 @@ spring:
     access-token-expire-time: 1800000
     refresh-token-expire-time: 172800000
 
-  swagger:
-    auth:
-      username: root
-      password: 0000
 
 
 #CORS 설정
 cors:
   allowed-origins: http://localhost:5173
+
+
+# S3
+cloud:
+  aws:
+    s3:
+      bucket: ${CLOUD_AWS_S3_BUCKET}
+      path:
+        profile: profile
+        event: event
+    region:
+      static: ${CLOUD_AWS_REGION_STATIC}
+    stack:
+      auto: false
+    credentials:
+      accessKey: ${AWS_ACCESS_KEY_ID}
+      secretKey: ${AWS_SECRET_ACCESS_KEY}
