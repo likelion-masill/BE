@@ -14,9 +14,9 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import project.masil.community.enums.Category;
 
 @Entity
@@ -24,7 +24,7 @@ import project.masil.community.enums.Category;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class EventPost extends Post {
 
   @ManyToOne(fetch = FetchType.LAZY)

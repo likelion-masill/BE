@@ -12,11 +12,19 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import project.masil.global.common.BaseTimeEntity;
 import project.masil.user.entity.User;
 
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 public abstract class Post extends BaseTimeEntity {
 
   @Id
