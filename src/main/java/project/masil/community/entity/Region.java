@@ -29,7 +29,7 @@ public class Region extends BaseTimeEntity {
   private String sido;
 
   @Column(nullable = false)
-  private String sigungu;
+  private String gu;
 
 
 }

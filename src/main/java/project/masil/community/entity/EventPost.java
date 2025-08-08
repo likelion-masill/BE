@@ -17,7 +17,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import project.masil.community.enums.Category;
+import project.masil.community.enums.EventType;
 
 @Entity
 @Table(name = "events")
@@ -33,7 +33,7 @@ public class EventPost extends Post {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private Category category;
+  private EventType eventType;
 
   @Column(nullable = false)
   private LocalDateTime startAt;
@@ -46,9 +46,6 @@ public class EventPost extends Post {
 
   @Column(nullable = false)
   private int viewCount = 0;
-
-  @Column
-  private String coverImage;
 
   @OneToMany(mappedBy = "eventPost", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderColumn(name = "sequence") // 순서 유지
