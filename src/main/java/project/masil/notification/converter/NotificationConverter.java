@@ -1,5 +1,5 @@
 package project.masil.notification.converter;
 
-public class PostConverter {
+public class NotificationConverter {
 
 }
