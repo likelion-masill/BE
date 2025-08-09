@@ -48,6 +48,11 @@ public class SecurityConfig {
                     // 인증 없이 허용할 경로
                     .requestMatchers("/users/sign-up", "/auths/login")
                     .permitAll()
+
+                    // 지역 정보 조회 API 인증 허용
+                    .requestMatchers("/regions/**")
+                    .permitAll()
+
                     // 그 외 모든 요청은 모두 인증 필요
                     .anyRequest()
                     .authenticated())
