@@ -1,9 +1,8 @@
+server:
+  servlet:
+    context-path: /api
+
 spring:
-
-  server:
-    servlet:
-      context-path: /api
-
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
