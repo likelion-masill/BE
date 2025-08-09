@@ -49,9 +49,10 @@ public class EventPost extends Post {
   @Column(name = "summary")
   private String summary;
 
+  @Builder.Default
   @Column(nullable = false)
   @ColumnDefault("0")
-  private int viewCount;
+  private int viewCount = 0;
 
   @ElementCollection
   @CollectionTable(name = "event_images", joinColumns = @JoinColumn(name = "event_id"))
@@ -60,8 +61,9 @@ public class EventPost extends Post {
   @Builder.Default
   private List<String> eventImages = new ArrayList<>();
 
+  @Builder.Default
   @OneToMany(mappedBy = "eventPost", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<ClubPost> clubPosts;
+  private List<ClubPost> clubPosts = new ArrayList<>();
 
 
 }

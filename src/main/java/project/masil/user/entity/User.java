@@ -1,6 +1,7 @@
 package project.masil.user.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -8,12 +9,18 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import project.masil.community.entity.Favorite;
 import project.masil.global.common.BaseTimeEntity;
 
 @Entity
@@ -28,6 +35,7 @@ public class User extends BaseTimeEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @Setter
   @Column(name = "username", nullable = false)
   private String username; //사용자 이름(별칭)
 
@@ -47,18 +55,22 @@ public class User extends BaseTimeEntity {
   @Builder.Default
   private Role role = Role.User;
 
-//  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-//  @Builder.Default
-//  private List<Favorite> likesList = new ArrayList<>();
+  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Builder.Default
+  private List<Favorite> likesList = new ArrayList<>();
 
-//  @Column
-//  private boolean isBusinessVerified;
-//
-//  @Column
-//  private String profileImageUrl;
-//
-//  @Column
-//  private String phoneNumber;
+  @Column(nullable = false)
+  private String phoneNumber;
+
+  @Setter
+  @Builder.Default
+  @Column(nullable = false)
+  @ColumnDefault("0")
+  private boolean businessVerified = false;
+
+  @Setter
+  @Column
+  private String profileImageUrl;
 
   public void createRefreshToken(String refreshToken) {
     this.refreshToken = refreshToken;
