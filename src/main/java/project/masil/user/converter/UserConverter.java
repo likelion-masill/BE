@@ -1,5 +1,5 @@
 package project.masil.user.converter;
 
-public class PostConverter {
+public class UserConverter {
 
 }

@@ -36,7 +36,7 @@ public class User extends BaseTimeEntity {
   private Long id;
 
   @Setter
-  @Column(name = "username", nullable = false)
+  @Column(name = "username", nullable = false, unique = true)
   private String username; //사용자 이름(별칭)
 
   @Column(nullable = false, unique = true)
@@ -62,7 +62,6 @@ public class User extends BaseTimeEntity {
   @Column(nullable = false)
   private String phoneNumber;
 
-  @Setter
   @Builder.Default
   @Column(nullable = false)
   @ColumnDefault("0")
@@ -74,6 +73,10 @@ public class User extends BaseTimeEntity {
 
   public void createRefreshToken(String refreshToken) {
     this.refreshToken = refreshToken;
+  }
+
+  public void verifyBusiness() {
+    this.businessVerified = true;
   }
 
 

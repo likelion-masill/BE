@@ -23,6 +23,7 @@ public class UserMapper {
         .password(encodedPassword)
         .username(request.getUsername())
         .role(Role.User)
+        .phoneNumber(request.getPhoneNumber())
         .build();
   }
 
