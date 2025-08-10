@@ -20,5 +20,7 @@ public interface RegionRepository extends JpaRepository<Region, Long> {
   Optional<Region> findBySidoAndSigungu(String sido, String sigungu);
 
   boolean existsBySido(String sido);
-  
+
+  boolean existsById(Long id);
+
 }
