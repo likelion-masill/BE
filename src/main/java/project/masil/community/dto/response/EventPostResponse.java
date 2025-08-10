@@ -31,7 +31,6 @@ public class EventPostResponse {
   @Schema(description = "이벤트 장소", example = "서울특별시 성북구 서경로 124")
   private String location;
 
-
   @Schema(description = "이벤트 시작 날짜 (KST)", example = "2025-08-08T19:00:00")
   private LocalDateTime startAt;
 
@@ -52,4 +51,7 @@ public class EventPostResponse {
 
   @Schema(description = "이벤트 이미지 리스트", example = "https://my-e~~~~~vent01.jpg")
   private List<String> images;
+
+  @Schema(description = "이벤트 게시글 생성시각")
+  private LocalDateTime createdAt;
 }

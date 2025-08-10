@@ -65,5 +65,23 @@ public class EventPost extends Post {
   @OneToMany(mappedBy = "eventPost", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ClubPost> clubPosts = new ArrayList<>();
 
+  //이벤트 수정 메소드
+  public void updateEventPost(Region region, EventType type, String title, String content,
+      String location, LocalDateTime startAt, LocalDateTime endAt) {
+    this.region = region;
+    this.eventType = type;
+    this.title = title;
+    this.content = content;
+    this.location = location;
+    this.startAt = startAt;
+    this.endAt = endAt;
+  }
+
+  //이미지 추가 메소드(수정에서 사용)
+  public void addImages(List<String> urls) {
+    if (urls == null || urls.isEmpty()) return;
+    this.eventImages.addAll(urls);
+  }
+
 
 }

@@ -1,16 +1,26 @@
 package project.masil.community.controller;
 
+import com.fasterxml.jackson.databind.ser.Serializers.Base;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +33,7 @@ import project.masil.global.security.CustomUserDetails;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/events")
+@Tag(name = "Event API", description = "이벤트 API")
 public class EventPostController {
 
   private final EventPostService eventPostService;
@@ -38,6 +49,53 @@ public class EventPostController {
         eventPostRequest, images);
     return ResponseEntity.ok(BaseResponse.success("이벤트 생성 성공", response));
   }
+
+  @Operation(summary = "이벤트 단일 조회", description = "이벤트 단일 조회 API")
+  @GetMapping("/{eventId}")
+  public ResponseEntity<BaseResponse<EventPostResponse>> getEvent(@PathVariable Long eventId) {
+    EventPostResponse response = eventPostService.getEventPost(eventId);
+    return ResponseEntity.ok(BaseResponse.success("이벤트 단일 조회 성공", response));
+  }
+
+  @GetMapping("/all")
+  public ResponseEntity<BaseResponse<Page<EventPostResponse>>> getAllEvents(
+      @RequestParam(defaultValue = "1") int page,          // ← 1부터 받기
+      @RequestParam(defaultValue = "20") int size,
+      @RequestParam(defaultValue = "createdAt") String sortBy,
+      @RequestParam(defaultValue = "desc") String sortDir
+  ) {
+    int pageIndex = Math.max(0, page - 1);                 // ← 0 기반으로 변환
+    Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
+    Pageable pageable = PageRequest.of(pageIndex, size, sort);
+
+    Page<EventPostResponse> response = eventPostService.getEventList(pageable);
+    return ResponseEntity.ok(BaseResponse.success("이벤트 리스트 조회 성공", response));
+  }
+
+  @Operation(summary = "이벤트 수정", description = "이벤트 페이지에서 이벤트 수정하기 눌렀을때 실행되는 API")
+  @PutMapping(value = "/{eventId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE) // consumes에서 이미지 타입을 제거하고 multipart/form-data만 사용
+  public ResponseEntity<BaseResponse<EventPostResponse>> updateEvent(
+      @PathVariable Long eventId,
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @RequestPart("request") @Valid EventPostRequest eventPostRequest,
+      @RequestPart(value = "eventImages", required = false) List<MultipartFile> images
+  ) {
+    EventPostResponse response = eventPostService.updateEvent(
+        eventId,
+        userDetails.getUser().getId(),
+        eventPostRequest,
+        images);
+    return ResponseEntity.ok(BaseResponse.success("이벤트 수정 성공", response));
+  }
+
+  @Operation(summary = "이벤트 삭제", description = "이벤트 페이지에서 이벤트 삭제하기 눌렀을때 실행되는 API")
+  @DeleteMapping("/{eventId}")
+  public ResponseEntity<BaseResponse<Boolean>> deletePost(@PathVariable Long eventId) {
+    boolean ok = eventPostService.deleteEvent(eventId);
+    return ResponseEntity.ok(BaseResponse.success("이벤트 삭제 성공", ok));
+  }
+
+
 
 
 }
