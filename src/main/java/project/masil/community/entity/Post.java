@@ -42,15 +42,15 @@ public abstract class Post extends BaseTimeEntity {
 
   @Setter
   @Column(nullable = false)
-  private String title;
+  protected String title;
 
   @Setter
   @Column(nullable = false)
-  private String location;
+  protected String location;
 
   @Setter
   @Column(nullable = false, columnDefinition = "TEXT")
-  private String content;
+  protected String content;
 
   @Builder.Default
   @Column(nullable = false)
