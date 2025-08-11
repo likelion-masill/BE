@@ -18,7 +18,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.ColumnDefault;
 import project.masil.global.common.BaseTimeEntity;
@@ -40,15 +39,12 @@ public abstract class Post extends BaseTimeEntity {
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
-  @Setter
   @Column(nullable = false)
   protected String title;
 
-  @Setter
   @Column(nullable = false)
   protected String location;
 
-  @Setter
   @Column(nullable = false, columnDefinition = "TEXT")
   protected String content;
 
