@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import project.masil.community.entity.ClubPost;
+import project.masil.community.entity.EventPost;
 
 public interface ClubPostRepository extends JpaRepository<ClubPost, Long> {
 
@@ -15,6 +16,6 @@ public interface ClubPostRepository extends JpaRepository<ClubPost, Long> {
    * @param pageable
    * @return
    */
-  @EntityGraph(attributePaths = {"user"})
-  Page<ClubPost> findAllByOrderByCreatedAtDesc(Pageable pageable);
+  @EntityGraph(attributePaths = {"user", "eventPost"})
+  Page<ClubPost> findByEventPostOrderByCreatedAtDesc(EventPost eventPost, Pageable pageable);
 }

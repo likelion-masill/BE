@@ -117,7 +117,11 @@ public class ClubPostService {
 
   @Transactional(readOnly = true)
   public Page<ClubPostSummaryResponse> getClubPostListByEventId(Long eventId, Pageable pageable) {
-    Page<ClubPost> clubPosts = clubPostRepository.findAllByOrderByCreatedAtDesc(pageable);
+    EventPost eventPost = eventPostRepository.findById(eventId)
+        .orElseThrow(() -> new CustomException(EventErrorCode.EVENT_NOT_FOUND));
+    Page<ClubPost> clubPosts = clubPostRepository.findByEventPostOrderByCreatedAtDesc(eventPost,
+        pageable);
+
     String coverImage = clubPosts.getContent().getFirst().getEventPost().getEventImages()
         .getFirst();
     return clubPosts.map(
