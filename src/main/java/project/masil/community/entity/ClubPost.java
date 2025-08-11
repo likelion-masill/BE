@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import project.masil.community.dto.request.ClubPostRequest;
 
 @Entity
 @Table(name = "clubs")
@@ -25,8 +25,14 @@ public class ClubPost extends Post {
   @JoinColumn(name = "event_id", nullable = false)
   private EventPost eventPost;
 
-  @Setter
   @Column(name = "start_at", nullable = false)
   private LocalDateTime startAt;
+
+  public void update(ClubPostRequest updateRequest) {
+    this.title = updateRequest.getTitle();
+    this.location = updateRequest.getLocation();
+    this.startAt = updateRequest.getStartAt();
+    this.content = updateRequest.getContent();
+  }
 
 }

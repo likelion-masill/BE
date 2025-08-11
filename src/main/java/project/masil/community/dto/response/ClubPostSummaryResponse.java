@@ -1,6 +1,8 @@
 package project.masil.community.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -19,16 +21,20 @@ public class ClubPostSummaryResponse {
   private String location;
 
   @Schema(description = "소모임 시작 시간", example = "2025-08-06T14:30:00")
-  private String startAt;
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+  private LocalDateTime startAt;
 
   @Schema(description = "관심목록 수", example = "129")
-  private Long favoriteCount;
+  private long favoriteCount;
 
   @Schema(description = "댓글 수", example = "34")
-  private Long commentCount;
+  private long commentCount;
 
   @Schema(description = "커버 이미지 URL", example = "https://my-event01.jpg")
   private String coverImage;
+
+  @Schema(description = "게시글 생성 시간", example = "2025-08-01T10:00:00")
+  private LocalDateTime createdAt;
 
 
 }
