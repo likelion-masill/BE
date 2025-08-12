@@ -7,9 +7,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import project.masil.auth.converter.AuthConverter;
 import project.masil.auth.dto.request.LoginRequest;
 import project.masil.auth.dto.response.LoginResponse;
-import project.masil.auth.mapper.AuthMapper;
 import project.masil.global.exception.CustomException;
 import project.masil.global.jwt.JwtProvider;
 import project.masil.user.entity.User;
@@ -24,7 +24,7 @@ public class AuthService {
   private final AuthenticationManager authenticationManager;
   private final JwtProvider jwtProvider;
   private final UserRepository userRepository;
-  private final AuthMapper authMapper;
+  private final AuthConverter authConverter;
 
   @Transactional
   public LoginResponse login(LoginRequest loginRequest) {
@@ -52,7 +52,7 @@ public class AuthService {
     log.info("로그인 성공: {}", user.getEmail());
 
     // 로그인 응답 반환
-    return authMapper.toLoginResponse(user, accessToken, expirationTime);
+    return authConverter.toLoginResponse(user, accessToken, expirationTime);
   }
 
 }
