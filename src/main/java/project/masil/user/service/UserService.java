@@ -11,13 +11,13 @@ import project.masil.global.config.S3.AmazonS3Manager;
 import project.masil.global.config.S3.Uuid;
 import project.masil.global.config.S3.UuidRepository;
 import project.masil.global.exception.CustomException;
+import project.masil.user.converter.UserConverter;
 import project.masil.user.dto.request.NicknameUpdateRequest;
 import project.masil.user.dto.request.SignUpRequest;
 import project.masil.user.dto.response.NicknameCheckResponse;
 import project.masil.user.dto.response.SignUpResponse;
 import project.masil.user.entity.User;
 import project.masil.user.exception.UserErrorCode;
-import project.masil.user.mapper.UserMapper;
 import project.masil.user.repository.UserRepository;
 
 @Service
@@ -27,7 +27,7 @@ public class UserService {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
-  private final UserMapper userMapper;
+  private final UserConverter userConverter;
   private final UuidRepository uuidRepository;
   private final AmazonS3Manager s3Manager;
 
@@ -47,14 +47,14 @@ public class UserService {
     String encodePassword = passwordEncoder.encode(request.getPassword());
 
     // UserMapper를 통해 Entity 생성
-    User user = userMapper.toEntity(request, encodePassword);
+    User user = userConverter.toEntity(request, encodePassword);
 
     // 저장 및 로깅
     User savedUser = userRepository.save(user);
     log.info("[서비스] 회원가입 성공: Email = {}, Username = {}", savedUser.getEmail(),
         savedUser.getUsername());
 
-    return userMapper.toSignUpResponse(savedUser);
+    return userConverter.toSignUpResponse(savedUser);
   }
 
   public NicknameCheckResponse checkNickname(String nickname) {

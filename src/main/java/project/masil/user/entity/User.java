@@ -59,8 +59,6 @@ public class User extends BaseTimeEntity {
   @Builder.Default
   private List<Favorite> likesList = new ArrayList<>();
 
-  @Column(nullable = false)
-  private String phoneNumber;
 
   @Builder.Default
   @Column(nullable = false)
