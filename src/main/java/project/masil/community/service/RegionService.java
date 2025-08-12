@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import project.masil.community.dto.response.RegionIdResponse;
+import project.masil.community.dto.response.RegionResponse;
 import project.masil.community.dto.response.SidoResponse;
 import project.masil.community.dto.response.SigunguResponse;
 import project.masil.community.entity.Region;
@@ -82,6 +83,13 @@ public class RegionService {
     return new RegionIdResponse(
         region.getId()
     );
+  }
+
+  public RegionResponse getRegionById(Long id) {
+    log.info("[서비스] 지역 조회 시도: id = {}", id);
+    return regionRepository.findById(id)
+        .map(region -> new RegionResponse(region.getSido(), region.getSigungu()))
+        .orElseThrow(() -> new CustomException(RegionErrorCode.REGION_NOT_FOUND));
   }
 
 }

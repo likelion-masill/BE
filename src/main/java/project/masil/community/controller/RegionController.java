@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import project.masil.community.dto.response.RegionIdResponse;
+import project.masil.community.dto.response.RegionResponse;
 import project.masil.community.dto.response.SidoResponse;
 import project.masil.community.dto.response.SigunguResponse;
 import project.masil.community.service.RegionService;
@@ -55,5 +56,13 @@ public class RegionController {
       @RequestParam String sigungu) {
     return ResponseEntity.ok(
         BaseResponse.success("지역 ID 조회 성공", regionService.getRegionId(sido, sigungu)));
+  }
+
+  @Operation(summary = "지역 정보 조회", description = "특정 광역지방자치단체와 기초지방자치단체에 해당하는 행정구역의 정보를 조회합니다.")
+  @GetMapping("/{regionId}")
+  public ResponseEntity<BaseResponse<RegionResponse>> getRegionInfo(
+      @RequestParam Long regionId) {
+    return ResponseEntity.ok(
+        BaseResponse.success("지역 정보 조회 성공", regionService.getRegionById(regionId)));
   }
 }
