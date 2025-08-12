@@ -3,6 +3,7 @@ package project.masil.global.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -47,6 +48,14 @@ public class SecurityConfig {
                     .permitAll()
                     // 인증 없이 허용할 경로
                     .requestMatchers("/users/sign-up", "/auth/login")
+                    .permitAll()
+
+                    // EventPost 조회 관련 API 인증 허용
+                    .requestMatchers(HttpMethod.GET, "/events/*")
+                    .permitAll()
+
+                    // ClubPost 조회 관련 API 인증 허용
+                    .requestMatchers(HttpMethod.GET, "/events/*/clubs/*")
                     .permitAll()
 
                     // 지역 정보 조회 API 인증 허용
