@@ -12,10 +12,11 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long> {
 
   /**
    * 페이징 처리 + N+1문제의 쿼리 횟수가
+   *
    * @param pageable
    * @return
    */
   @EntityGraph(attributePaths = {"user", "eventImages"})
-  Page<EventPost> findAllByOrderByCreatedAtDesc(Pageable pageable);
+  Page<EventPost> findAllByRegionIdOrderByCreatedAtDesc(Long regionId, Pageable pageable);
 
 }

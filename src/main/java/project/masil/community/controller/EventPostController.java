@@ -1,6 +1,5 @@
 package project.masil.community.controller;
 
-import com.fasterxml.jackson.databind.ser.Serializers.Base;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -39,7 +37,8 @@ public class EventPostController {
   private final EventPostService eventPostService;
 
   @Operation(summary = "이벤트 생성", description = "이벤트 페이지에서 이벤트 생성버튼을 눌렀을때 요청되는 API")
-  @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE) // consumes에서 이미지 타입을 제거하고 multipart/form-data만 사용
+  @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  // consumes에서 이미지 타입을 제거하고 multipart/form-data만 사용
   public ResponseEntity<BaseResponse<EventPostResponse>> createEvent(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @RequestPart("request") @Valid EventPostRequest eventPostRequest,
@@ -59,6 +58,7 @@ public class EventPostController {
 
   @GetMapping("/all")
   public ResponseEntity<BaseResponse<Page<EventPostResponse>>> getAllEvents(
+      @RequestParam(defaultValue = "1") Long regionId, // ← 지역 ID를 받는 파라미터 추가
       @RequestParam(defaultValue = "1") int page,          // ← 1부터 받기
       @RequestParam(defaultValue = "20") int size,
       @RequestParam(defaultValue = "createdAt") String sortBy,
@@ -68,12 +68,13 @@ public class EventPostController {
     Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
     Pageable pageable = PageRequest.of(pageIndex, size, sort);
 
-    Page<EventPostResponse> response = eventPostService.getEventList(pageable);
+    Page<EventPostResponse> response = eventPostService.getEventList(regionId, pageable);
     return ResponseEntity.ok(BaseResponse.success("이벤트 리스트 조회 성공", response));
   }
 
   @Operation(summary = "이벤트 수정", description = "이벤트 페이지에서 이벤트 수정하기 눌렀을때 실행되는 API")
-  @PutMapping(value = "/{eventId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE) // consumes에서 이미지 타입을 제거하고 multipart/form-data만 사용
+  @PutMapping(value = "/{eventId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  // consumes에서 이미지 타입을 제거하고 multipart/form-data만 사용
   public ResponseEntity<BaseResponse<EventPostResponse>> updateEvent(
       @PathVariable Long eventId,
       @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -94,8 +95,6 @@ public class EventPostController {
     boolean ok = eventPostService.deleteEvent(eventId);
     return ResponseEntity.ok(BaseResponse.success("이벤트 삭제 성공", ok));
   }
-
-
 
 
 }

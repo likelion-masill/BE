@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,6 @@ import project.masil.global.config.S3.AmazonS3Manager;
 import project.masil.global.config.S3.Uuid;
 import project.masil.global.config.S3.UuidRepository;
 import project.masil.global.exception.CustomException;
-import project.masil.global.response.BaseResponse;
 import project.masil.user.entity.User;
 import project.masil.user.exception.UserErrorCode;
 import project.masil.user.repository.UserRepository;
@@ -131,13 +129,15 @@ public class EventPostService {
    * @return
    */
   @Transactional(readOnly = true)
-  public Page<EventPostResponse> getEventList(Pageable pageable) {
-    Page<EventPost> page = eventPostRepository.findAllByOrderByCreatedAtDesc(pageable);
+  public Page<EventPostResponse> getEventList(Long eventId, Pageable pageable) {
+    Page<EventPost> page = eventPostRepository.findAllByRegionIdOrderByCreatedAtDesc(eventId,
+        pageable);
     return page.map(converter::toResponse);
   }
 
   /**
    * 이벤트 수정
+   *
    * @param eventPostId
    * @param userId
    * @param request
@@ -195,15 +195,15 @@ public class EventPostService {
       eventPost.addImages(newUrls);
     }
 
-      // @Transactional이 있어서 변경감지로 저장되므로 save() 불필요. 항상 마지막에 반환
-      return converter.toResponse(eventPost);
-    }
+    // @Transactional이 있어서 변경감지로 저장되므로 save() 불필요. 항상 마지막에 반환
+    return converter.toResponse(eventPost);
+  }
 
-    public Boolean deleteEvent(Long eventPostId) {
-      EventPost eventPost = eventPostRepository.findById(eventPostId)
-          .orElseThrow(() -> new CustomException(EventErrorCode.EVENT_NOT_FOUND));
-      eventPostRepository.delete(eventPost);
-      return true;
-    }
+  public Boolean deleteEvent(Long eventPostId) {
+    EventPost eventPost = eventPostRepository.findById(eventPostId)
+        .orElseThrow(() -> new CustomException(EventErrorCode.EVENT_NOT_FOUND));
+    eventPostRepository.delete(eventPost);
+    return true;
+  }
 
 }
