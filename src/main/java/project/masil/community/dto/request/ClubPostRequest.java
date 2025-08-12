@@ -1,6 +1,5 @@
 package project.masil.community.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,8 +21,11 @@ public class ClubPostRequest {
   private String location;
 
   @NotNull(message = "소모임 시작 시간은 필수 항목입니다.")
-  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
-  @Schema(description = "소모임 시작 시간", example = "2025-08-06T14:30:00")
+  @Schema(
+      description = "소모임 시작 시간",
+      type = "string",
+      example = "2025-08-06T14:30:00"
+  )
   private LocalDateTime startAt;
 
   @NotBlank(message = "게시글 내용은 필수 항목입니다.")

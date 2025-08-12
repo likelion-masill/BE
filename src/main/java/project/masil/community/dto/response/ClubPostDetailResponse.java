@@ -43,10 +43,6 @@ public class ClubPostDetailResponse {
   @Schema(description = "이미지 URL 목록", example = "[\"https://my-event01.jpg\", \"https://my-event02.jpg\"]")
   private List<String> images;
 
-  @JsonFormat(
-      shape = JsonFormat.Shape.STRING,
-      pattern = "yyyy-MM-dd'T'HH:mm:ss" // 타임존 정보 제거
-  )
   @Schema(description = "게시글 생성 시간", example = "2025-08-01T10:00:00")
   private LocalDateTime createdAt;
 }

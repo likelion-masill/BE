@@ -1,11 +1,9 @@
 package project.masil.community.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -41,30 +39,18 @@ public class EventPostRequest {
   @NotNull(message = "시작 날짜는 필수입니다.")
   @Schema(
       description = "시작 날짜 (UTC/Z 포함 ISO 8601 형식)",
-      example = "2025-08-08T10:00:00.000Z"
+      type = "string",
+      example = "2025-08-08T10:00:00"
   )
-  private OffsetDateTime startAt; // "Z" 포함 가능
+  private LocalDateTime startAt; // "Z" 포함 가능
 
   @NotNull(message = "종료 날짜는 필수입니다.")
   @Schema(
       description = "종료 날짜 (UTC/Z 포함 ISO 8601 형식)",
-      example = "2025-09-01T18:00:00.000Z"
+      type = "string",
+      example = "2025-09-01T18:00:00"
   )
-  private OffsetDateTime endAt;
+  private LocalDateTime endAt;
 
-//  @NotNull(message = "시작 날짜는 필수입니다.")
-//  @Schema(description = "시작 날짜", example = "2025-08-08T10:00:00")
-//  @JsonFormat(shape = JsonFormat.Shape.STRING,
-//      pattern = "yyyy-MM-dd'T'HH:mm:ss",
-//      timezone = "Asia/Seoul")
-//  private LocalDateTime startAt;
-//
-//  @NotNull(message = "종료 날짜는 필수입니다.")
-//  @Schema(description = "종료 날짜", example = "2025-09-01T18:00:00")
-//  @JsonFormat(shape = JsonFormat.Shape.STRING,
-//      pattern = "yyyy-MM-dd'T'HH:mm:ss",
-//      timezone = "Asia/Seoul"
-//  )
-//  private LocalDateTime endAt;
 
 }

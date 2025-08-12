@@ -1,7 +1,6 @@
 package project.masil.community.service;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -68,12 +67,8 @@ public class EventPostService {
         .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
     // 1) 날짜 변환 (KST 기준 LocalDateTime)
-    LocalDateTime startAtKst = request.getStartAt()
-        .atZoneSameInstant(ZoneId.of("Asia/Seoul"))
-        .toLocalDateTime();
-    LocalDateTime endAtKst = request.getEndAt()
-        .atZoneSameInstant(ZoneId.of("Asia/Seoul"))
-        .toLocalDateTime();
+    LocalDateTime startAtKst = request.getStartAt();
+    LocalDateTime endAtKst = request.getEndAt();
 
     // 종료 >= 시작 검증
     if (request.getEndAt().isBefore(request.getStartAt())) {
@@ -164,13 +159,8 @@ public class EventPostService {
     Region region = regionRepository.findById(request.getRegionId())
         .orElseThrow(() -> new CustomException(RegionErrorCode.REGION_NOT_FOUND));
 
-    // 시간 변환(UTC/Offset → KST LocalDateTime)
-    LocalDateTime startAtKst = request.getStartAt()
-        .atZoneSameInstant(ZoneId.of("Asia/Seoul"))
-        .toLocalDateTime();
-    LocalDateTime endAtKst = request.getEndAt()
-        .atZoneSameInstant(ZoneId.of("Asia/Seoul"))
-        .toLocalDateTime();
+    LocalDateTime startAtKst = request.getStartAt();
+    LocalDateTime endAtKst = request.getEndAt();
 
     //업데이트
     eventPost.updateEventPost(
