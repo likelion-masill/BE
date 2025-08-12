@@ -76,7 +76,7 @@ public class ClubPostController {
 
   @Operation(summary = " 특정 이벤트 게시그르이 소모임 게시글 목록 조회",
       description = "특정 이벤트에 대한 소모임 게시글 목록을 조회합니다.")
-  @PostMapping("/{eventId}/clubs/all")
+  @PostMapping("/all")
   public ResponseEntity<BaseResponse<Page<ClubPostSummaryResponse>>> getClubPostListByEventId(
       @PathVariable Long eventId,
       @RequestParam(defaultValue = "1") int page,
