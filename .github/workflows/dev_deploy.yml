@@ -39,30 +39,17 @@ jobs:
           path: build/libs/*.jar
 
   deploy:
-    needs: build
+    needs: build  # build 작업이 성공적으로 완료된 후 실행
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Download build artifact
+      - name: Download build artifact  # 이전 단계에서 업로드한 아티팩트 다운로드
         uses: actions/download-artifact@v4
         with:
           name: serverTest
           path: build/libs/
 
-      - name: Create runtime .env
-        run: |
-          cat > .env <<'ENV'
-          SPRING_PROFILES_ACTIVE=prod
-          DB_URL=${{ secrets.DB_URL }}
-          DB_USERNAME=${{ secrets.DB_USERNAME }}
-          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          CLOUD_AWS_REGION_STATIC=${{ secrets.CLOUD_AWS_REGION_STATIC }}
-          CLOUD_AWS_S3_BUCKET=${{ secrets.CLOUD_AWS_S3_BUCKET }}
-          ENV
-
-      - name: Deploy to EC2
+      - name: Deploy to EC2  # EC2에 배포
         env:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
@@ -71,35 +58,10 @@ jobs:
           echo "$EC2_SSH_KEY" > private_key.pem
           chmod 600 private_key.pem
           jar_file=$(find build/libs -name '*.jar' ! -name '*plain.jar' | head -n 1)
-          
-          scp -i private_key.pem -o StrictHostKeyChecking=no "$jar_file" .env $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/
-          
+          scp -i private_key.pem -o StrictHostKeyChecking=no "$jar_file" $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/serverTest.jar
           ssh -i private_key.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
-            pgrep java | xargs -r kill -15
-            sleep 5
-          
-            set -a; source /home/$EC2_USERNAME/.env; set +a
-            echo '==ENV CHECK=='
-            env | grep -E 'SPRING_PROFILES_ACTIVE|DB_URL|DB_USERNAME|DB_PASSWORD' || true
-          
-            nohup java \
-              -Dspring.profiles.active=\$SPRING_PROFILES_ACTIVE \
-              -Dspring.datasource.url=\"\$DB_URL\" \
-              -Dspring.datasource.username=\"\$DB_USERNAME\" \
-              -Dspring.datasource.password=\"\$DB_PASSWORD\" \
-              -jar /home/$EC2_USERNAME/$(basename "$jar_file") > app.log 2>&1 &
-          
-            for i in {1..10}; do
-              sleep 3
-              if curl -fsS http://127.0.0.1:8080/api/actuator/health >/dev/null; then
-                echo 'App is UP'; exit 0
-              fi
-              echo 'Waiting for app... ('$i'/10)'
-            done
-          
-            echo 'App failed to start'
-            echo '==== LAST 200 LINES OF app.log ===='
-            tail -n 200 app.log || true
-            exit 1
+            pgrep java | xargs -r kill -15  # 기존에 실행 중인 Java 프로세스 종료
+            sleep 10
+            nohup java -jar /home/$EC2_USERNAME/serverTest.jar > app.log 2>&1 &  # 새 버전 애플리케이션 실행
           "
-          rm -f private_key.pem
+          rm -f private_key.pem  # 민감한 정보 삭제
