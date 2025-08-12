@@ -1,7 +1,9 @@
 package project.masil.community.entity;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -12,19 +14,22 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import project.masil.community.enums.Category;
+import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.ColumnDefault;
+import project.masil.community.enums.EventType;
 
 @Entity
 @Table(name = "events")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class EventPost extends Post {
 
   @ManyToOne(fetch = FetchType.LAZY)
@@ -33,7 +38,7 @@ public class EventPost extends Post {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private Category category;
+  private EventType eventType;
 
   @Column(nullable = false)
   private LocalDateTime startAt;
@@ -41,21 +46,42 @@ public class EventPost extends Post {
   @Column(nullable = false)
   private LocalDateTime endAt;
 
-  @Column(nullable = false)
+  @Column(name = "summary")
   private String summary;
 
+  @Builder.Default
   @Column(nullable = false)
+  @ColumnDefault("0")
   private int viewCount = 0;
 
-  @Column
-  private String coverImage;
+  @ElementCollection
+  @CollectionTable(name = "event_images", joinColumns = @JoinColumn(name = "event_id"))
+  @Column(name = "image_url", nullable = false)         // 값 컬럼 이름 지정
+  @OrderColumn(name = "sequence")                       // 순서(인덱스) 컬럼 저장
+  @Builder.Default
+  private List<String> eventImages = new ArrayList<>();
 
+  @Builder.Default
   @OneToMany(mappedBy = "eventPost", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-  @OrderColumn(name = "sequence") // 순서 유지
-  private List<EventImage> images;
+  private List<ClubPost> clubPosts = new ArrayList<>();
 
-  @OneToMany(mappedBy = "eventPost", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<ClubPost> clubPosts;
+  //이벤트 수정 메소드
+  public void updateEventPost(Region region, EventType type, String title, String content,
+      String location, LocalDateTime startAt, LocalDateTime endAt) {
+    this.region = region;
+    this.eventType = type;
+    this.title = title;
+    this.content = content;
+    this.location = location;
+    this.startAt = startAt;
+    this.endAt = endAt;
+  }
+
+  //이미지 추가 메소드(수정에서 사용)
+  public void addImages(List<String> urls) {
+    if (urls == null || urls.isEmpty()) return;
+    this.eventImages.addAll(urls);
+  }
 
 
 }

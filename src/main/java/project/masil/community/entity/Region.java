@@ -25,9 +25,15 @@ public class Region extends BaseTimeEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  /**
+   * 광역지방자치단체 (시·도) 이름 예: 서울특별시, 경기도, 전라남도
+   */
   @Column(nullable = false)
   private String sido;
 
+  /**
+   * 기초지방자치단체 (시·군·구) 이름 예: 종로구, 수원시, 무안군
+   */
   @Column(nullable = false)
   private String sigungu;
 

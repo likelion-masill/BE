@@ -12,4 +12,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
   boolean existsByEmail(String email);
 
+  /**
+   * 닉네임 존재 여부 확인
+   *
+   * @param username 닉네임
+   * @return 존재하면 true, 아니면 false
+   */
+  boolean existsByUsername(String username);
 }

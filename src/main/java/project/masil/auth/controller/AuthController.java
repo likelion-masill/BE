@@ -21,7 +21,7 @@ import project.masil.user.repository.UserRepository;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/auths")
+@RequestMapping("/auth")
 @Tag(name = "Auth", description = "Auth 관리 API")
 public class AuthController {
 

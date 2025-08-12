@@ -8,16 +8,17 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+import project.masil.community.dto.request.ClubPostRequest;
 
 @Entity
 @Table(name = "clubs")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class ClubPost extends Post {
 
   @ManyToOne(fetch = FetchType.LAZY)
@@ -27,5 +28,11 @@ public class ClubPost extends Post {
   @Column(name = "start_at", nullable = false)
   private LocalDateTime startAt;
 
+  public void update(ClubPostRequest updateRequest) {
+    this.title = updateRequest.getTitle();
+    this.location = updateRequest.getLocation();
+    this.startAt = updateRequest.getStartAt();
+    this.content = updateRequest.getContent();
+  }
 
 }

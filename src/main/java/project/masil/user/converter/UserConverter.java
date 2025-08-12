@@ -1,4 +1,4 @@
-package project.masil.user.mapper;
+package project.masil.user.converter;
 
 import org.springframework.stereotype.Component;
 import project.masil.user.dto.request.SignUpRequest;
@@ -7,11 +7,12 @@ import project.masil.user.entity.Role;
 import project.masil.user.entity.User;
 
 @Component
-public class UserMapper {
+public class UserConverter {
 
   public SignUpResponse toSignUpResponse(User user) {
     return SignUpResponse.builder()
         .userId(user.getId())
+        .nickname(user.getUsername())
         .email(user.getEmail())
         .build();
   }
@@ -24,5 +25,4 @@ public class UserMapper {
         .role(Role.User)
         .build();
   }
-
 }

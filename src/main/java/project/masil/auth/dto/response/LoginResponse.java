@@ -13,6 +13,7 @@ public class LoginResponse {
   @Schema(description = "사용자 Access Token")
   private String accessToken;
 
+
   @Schema(description = "사용자 ID", example = "1")
   private Long userId;
 
