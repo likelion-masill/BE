@@ -1,6 +1,8 @@
 package project.masil.community.converter;
 
+import java.util.stream.IntStream;
 import org.springframework.stereotype.Component;
+import project.masil.community.dto.response.EventImageResponse;
 import project.masil.community.dto.response.EventPostResponse;
 import project.masil.community.entity.EventPost;
 
@@ -18,8 +20,15 @@ public class EventPostConverter {
         .endAt(eventPost.getEndAt())
         .favoriteCount(eventPost.getFavoriteCount())
         .commentCount(eventPost.getCommentCount())
-        .images(eventPost.getEventImages())
-        .userImage(eventPost.getUser().getProfileImageUrl())
+        .images(
+            IntStream.range(0, eventPost.getEventImages().size())
+                .mapToObj(i -> EventImageResponse.builder()
+                    .sequence(i + 1) // DB sequence 컬럼이 0부터면 +1
+                    .imageUrl(eventPost.getEventImages().get(i))
+                    .build()
+                )
+                .toList()
+        ).userImage(eventPost.getUser().getProfileImageUrl())
         .createdAt(eventPost.getCreatedAt())
         .viewCount(eventPost.getViewCount())
         .favoriteCount(eventPost.getFavoriteCount())

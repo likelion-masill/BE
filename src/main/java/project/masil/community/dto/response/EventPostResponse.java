@@ -1,9 +1,7 @@
 package project.masil.community.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
@@ -49,8 +47,8 @@ public class EventPostResponse {
   @Schema(description = "조회수", example = "해당 이벤트 조회수")
   private Integer viewCount;
 
-  @Schema(description = "이벤트 이미지 리스트", example = "https://my-e~~~~~vent01.jpg")
-  private List<String> images;
+  @Schema(description = "이벤트 이미지 리스트")
+  private List<EventImageResponse> images;
 
   @Schema(description = "이벤트 게시글 생성시각")
   private LocalDateTime createdAt;
