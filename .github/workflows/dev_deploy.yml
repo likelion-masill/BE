@@ -65,3 +65,59 @@ jobs:
             nohup java -jar /home/$EC2_USERNAME/serverTest.jar > app.log 2>&1 &  # 새 버전 애플리케이션 실행
           "
           rm -f private_key.pem  # 민감한 정보 삭제
+deploy:
+  needs: build
+  runs-on: ubuntu-24.04
+
+  steps:
+    - name: Download build artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: serverTest
+        path: build/libs/
+
+    - name: Create runtime .env
+      run: |
+        cat > .env <<'ENV'
+        SPRING_PROFILES_ACTIVE=prod
+        DB_URL=${{ secrets.DB_URL }}
+        DB_USERNAME=${{ secrets.DB_USERNAME }}
+        DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+        AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        CLOUD_AWS_REGION_STATIC=${{ secrets.CLOUD_AWS_REGION_STATIC }}
+        CLOUD_AWS_S3_BUCKET=${{ secrets.CLOUD_AWS_S3_BUCKET }}
+        ENV
+
+    - name: Deploy to EC2
+      env:
+        EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+        EC2_HOST: ${{ secrets.EC2_HOST }}
+      run: |
+        echo "$EC2_SSH_KEY" > private_key.pem
+        chmod 600 private_key.pem
+        jar_file=$(find build/libs -name '*.jar' ! -name '*plain.jar' | head -n 1)
+
+        # 업로드 (JAR + .env)
+        scp -i private_key.pem -o StrictHostKeyChecking=no "$jar_file" .env $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/
+
+        # 원격 실행: 기존 종료 → ENV 로드 → 재기동 → 간단 헬스체크
+        ssh -i private_key.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
+          pgrep java | xargs -r kill -15
+          sleep 5
+          set -a; source /home/$EC2_USERNAME/.env; set +a
+          nohup java -Dspring.profiles.active=\$SPRING_PROFILES_ACTIVE -jar /home/$EC2_USERNAME/$(basename "$jar_file") > app.log 2>&1 &
+
+          for i in {1..10}; do
+            sleep 3
+            if curl -fsS http://127.0.0.1:8080/actuator/health >/dev/null; then
+              echo 'App is UP'
+              exit 0
+            fi
+            echo 'Waiting for app... ('$i'/10)'
+          done
+
+          echo 'App failed to start'; tail -n 200 app.log || true; exit 1
+        "
+        rm -f private_key.pem
