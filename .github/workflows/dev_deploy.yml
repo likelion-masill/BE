@@ -72,25 +72,34 @@ jobs:
           chmod 600 private_key.pem
           jar_file=$(find build/libs -name '*.jar' ! -name '*plain.jar' | head -n 1)
           
-          # 업로드 (JAR + .env)
           scp -i private_key.pem -o StrictHostKeyChecking=no "$jar_file" .env $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/
           
-          # 원격 실행: 기존 종료 → ENV 로드 → 재기동 → 간단 헬스체크
           ssh -i private_key.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
             pgrep java | xargs -r kill -15
             sleep 5
+          
             set -a; source /home/$EC2_USERNAME/.env; set +a
-            nohup java -Dspring.profiles.active=\$SPRING_PROFILES_ACTIVE -jar /home/$EC2_USERNAME/$(basename "$jar_file") > app.log 2>&1 &
+            echo '==ENV CHECK=='
+            env | grep -E 'SPRING_PROFILES_ACTIVE|DB_URL|DB_USERNAME|DB_PASSWORD' || true
+          
+            nohup java \
+              -Dspring.profiles.active=\$SPRING_PROFILES_ACTIVE \
+              -Dspring.datasource.url=\"\$DB_URL\" \
+              -Dspring.datasource.username=\"\$DB_USERNAME\" \
+              -Dspring.datasource.password=\"\$DB_PASSWORD\" \
+              -jar /home/$EC2_USERNAME/$(basename "$jar_file") > app.log 2>&1 &
           
             for i in {1..10}; do
               sleep 3
-              if curl -fsS http://127.0.0.1:8080/actuator/health >/dev/null; then
-                echo 'App is UP'
-                exit 0
+              if curl -fsS http://127.0.0.1:8080/api/actuator/health >/dev/null; then
+                echo 'App is UP'; exit 0
               fi
               echo 'Waiting for app... ('$i'/10)'
             done
           
-            echo 'App failed to start'; tail -n 200 app.log || true; exit 1
+            echo 'App failed to start'
+            echo '==== LAST 200 LINES OF app.log ===='
+            tail -n 200 app.log || true
+            exit 1
           "
           rm -f private_key.pem
