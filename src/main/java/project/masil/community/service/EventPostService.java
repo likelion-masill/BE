@@ -16,6 +16,7 @@ import project.masil.community.dto.request.EventPostRequest;
 import project.masil.community.dto.response.EventPostResponse;
 import project.masil.community.entity.EventPost;
 import project.masil.community.entity.Region;
+import project.masil.community.enums.PostType;
 import project.masil.community.exception.EventErrorCode;
 import project.masil.community.exception.RegionErrorCode;
 import project.masil.community.repository.EventPostRepository;
@@ -80,6 +81,7 @@ public class EventPostService {
         .orElseThrow(() -> new CustomException(RegionErrorCode.REGION_NOT_FOUND));
 
     EventPost eventPost = EventPost.builder()
+        .postType(PostType.EVENT)
         .user(user)
         .region(region)
         .eventType(request.getEventType())
