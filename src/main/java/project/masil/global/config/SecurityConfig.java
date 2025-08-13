@@ -62,6 +62,18 @@ public class SecurityConfig {
                     .requestMatchers("/regions/**")
                     .permitAll()
 
+                    // 이벤트 대댓글 조회
+                    .requestMatchers(HttpMethod.GET, "/events/{eventId}/{commentId}/replies")
+                    .permitAll()
+                    // 이벤트 댓글 조회
+                    .requestMatchers(HttpMethod.GET, "/events/{eventId}/comments").permitAll()
+                    // 소모임 대댓글 조회
+                    .requestMatchers(HttpMethod.GET,
+                        "/events/{eventId}/clubs/{clubId}/{commentId}/replies").permitAll()
+                    // 소모임 댓글 조회
+                    .requestMatchers(HttpMethod.GET, "/events/{eventId}/clubs/{clubId}/comments")
+                    .permitAll()
+
                     // 그 외 모든 요청은 모두 인증 필요
                     .anyRequest()
                     .authenticated())

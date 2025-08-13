@@ -12,6 +12,7 @@ import project.masil.community.dto.response.ClubPostDetailResponse;
 import project.masil.community.dto.response.ClubPostSummaryResponse;
 import project.masil.community.entity.ClubPost;
 import project.masil.community.entity.EventPost;
+import project.masil.community.enums.PostType;
 import project.masil.community.exception.ClubPostErrorCode;
 import project.masil.community.exception.EventErrorCode;
 import project.masil.community.repository.ClubPostRepository;
@@ -48,6 +49,7 @@ public class ClubPostService {
         .orElseThrow(() -> new CustomException(EventErrorCode.EVENT_NOT_FOUND));
 
     ClubPost clubPost = ClubPost.builder()
+        .postType(PostType.CLUB)
         .user(user)
         .eventPost(eventPost)
         .title(createRequest.getTitle())

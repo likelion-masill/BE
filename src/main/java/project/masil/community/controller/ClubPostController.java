@@ -12,6 +12,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -47,7 +48,7 @@ public class ClubPostController {
   }
 
   @Operation(summary = "소모임 게시글 상세 조회", description = "소모임 게시글의 상세 정보를 조회합니다.")
-  @PostMapping("/{clubId}")
+  @GetMapping("/{clubId}")
   public ResponseEntity<BaseResponse<ClubPostDetailResponse>> getClubPostDetail(
       @PathVariable Long clubId) {
     ClubPostDetailResponse result = clubPostService.getClubPostDetail(clubId);
@@ -74,9 +75,9 @@ public class ClubPostController {
     return ResponseEntity.ok(BaseResponse.success("소모임 게시글 삭제 성공", null));
   }
 
-  @Operation(summary = " 특정 이벤트 게시그르이 소모임 게시글 목록 조회",
+  @Operation(summary = " 특정 이벤트 게시글의 소모임 게시글 목록 조회",
       description = "특정 이벤트에 대한 소모임 게시글 목록을 조회합니다.")
-  @PostMapping("/all")
+  @GetMapping("/all")
   public ResponseEntity<BaseResponse<Page<ClubPostSummaryResponse>>> getClubPostListByEventId(
       @PathVariable Long eventId,
       @RequestParam(defaultValue = "1") int page,
