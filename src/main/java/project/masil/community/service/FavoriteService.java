@@ -25,12 +25,12 @@ public class FavoriteService {
   private final FavoriteRepository favoriteRepository;
 
   /**
-   * 게시글의 즐겨찾기 상태를 토글합니다.
+   * 게시글의 관심목록 상태를 토글합니다.
    *
    * @param userId       사용자 ID
    * @param postId       게시글 ID
    * @param expectedType 게시글 타입 (EVENT 또는 CLUB)
-   * @return 즐겨찾기 응답 객체
+   * @return 관심목록 응답 객체
    */
   @Transactional
   public FavoriteResponse toggleFavorite(Long userId, Long postId, PostType expectedType) {
