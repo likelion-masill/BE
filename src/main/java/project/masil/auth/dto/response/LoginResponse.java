@@ -20,6 +20,9 @@ public class LoginResponse {
   @Schema(description = "사용자 아이디 또는 이메일", example = "jhjk1234@gmail.com")
   private String email;
 
+  @Schema(description = "사용자가 설정한 지역의 고유 ID", example = "1")
+  private Long regionId;
+
   @Schema(description = "사용자 권한", example = "USER")
   private Role role;
 

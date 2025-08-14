@@ -12,6 +12,7 @@ public class AuthConverter {
         .accessToken(accessToken)
         .userId(user.getId())
         .email(user.getEmail())
+        .regionId(user.getRegion().getId())
         .role(user.getRole())
         .expirationTime(expirationTime)
         .build();

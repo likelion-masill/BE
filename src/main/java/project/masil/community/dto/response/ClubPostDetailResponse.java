@@ -35,10 +35,10 @@ public class ClubPostDetailResponse {
   private String content;
 
   @Schema(description = "관심목록 수", example = "129")
-  private long favoriteCount;
+  private int favoriteCount;
 
   @Schema(description = "댓글 수", example = "34")
-  private long commentCount;
+  private int commentCount;
 
   @Schema(description = "이미지 URL 목록", example = "[\"https://my-event01.jpg\", \"https://my-event02.jpg\"]")
   private List<String> images;
