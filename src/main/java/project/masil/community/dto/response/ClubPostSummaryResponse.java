@@ -25,10 +25,10 @@ public class ClubPostSummaryResponse {
   private LocalDateTime startAt;
 
   @Schema(description = "관심목록 수", example = "129")
-  private long favoriteCount;
+  private int favoriteCount;
 
   @Schema(description = "댓글 수", example = "34")
-  private long commentCount;
+  private int commentCount;
 
   @Schema(description = "커버 이미지 URL", example = "https://my-event01.jpg")
   private String coverImage;
