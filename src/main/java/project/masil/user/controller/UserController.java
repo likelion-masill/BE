@@ -71,7 +71,6 @@ public class UserController {
 
   }
 
-  // /api/users/{userId}/region
   @Operation(summary = "사용자 지역 정보 변경 API", description = "사용자의 지역 정보를 변경하는 API")
   @PatchMapping("/me/region/")
   public ResponseEntity<BaseResponse<RegionIdResponse>> updateRegion(
