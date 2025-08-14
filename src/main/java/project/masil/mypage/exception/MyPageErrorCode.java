@@ -8,8 +8,12 @@ import project.masil.global.exception.model.BaseErrorCode;
 @Getter
 @AllArgsConstructor
 public enum MyPageErrorCode implements BaseErrorCode {
-  UNKNOWN_POST_TYPE("MYPAGE_POST_TYPE_400", "알 수 없는 게시글 타입입니다.", HttpStatus.BAD_REQUEST);
-
+  UNKNOWN_POST_TYPE("MYPAGE_POST_TYPE_400", "알 수 없는 게시글 타입입니다.", HttpStatus.BAD_REQUEST),
+  OWNER_VERIFICATION_FAILED("MYPAGE_OWNER_VERIFICATION_400", "사업자 정보 조회에 실패했습니다.",
+      HttpStatus.BAD_REQUEST),
+  OWNER_VERIFICATION_API_ERROR("MYPAGE_OWNER_VERIFICATION_API_500",
+      "사업자 정보 조회 API 호출 중 오류가 발생했습니다.",
+      HttpStatus.INTERNAL_SERVER_ERROR);
   private final String code;
   private final String message;
   private final HttpStatus status;
