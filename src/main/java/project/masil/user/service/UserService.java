@@ -8,6 +8,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import project.masil.community.dto.request.RegionUpdateRequest;
+import project.masil.community.dto.response.RegionIdResponse;
 import project.masil.community.entity.Region;
 import project.masil.community.exception.RegionErrorCode;
 import project.masil.community.repository.RegionRepository;
@@ -90,6 +92,13 @@ public class UserService {
     return user.getUsername();
   }
 
+  /**
+   * 프로필 이미지 업로드
+   *
+   * @param userId 사용자 ID
+   * @param image  업로드할 이미지 파일
+   * @return 업로드된 이미지의 URL
+   */
   @Transactional
   public String uploadProfileImage(Long userId, MultipartFile image) {
     String uuid = UUID.randomUUID().toString();
@@ -104,5 +113,28 @@ public class UserService {
 
   }
 
+  /**
+   * 사용자 지역 정보 변경
+   *
+   * @param userId  사용자 ID
+   * @param request 지역 정보 변경 요청
+   * @return 변경된 지역 ID 응답
+   */
+  @Transactional
+  public RegionIdResponse updateRegion(Long userId, RegionUpdateRequest request) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
+    Long regionId = request.getRegionId();
+
+    Region region = regionRepository.findById(regionId)
+        .orElseThrow(() -> new CustomException(RegionErrorCode.REGION_NOT_FOUND));
+
+    user.updateRegion(region);
+    log.info("[서비스] 사용자 지역 정보 변경 성공: UserId = {}, NewRegionId = {}", userId, regionId);
+
+    return RegionIdResponse.builder()
+        .regionId(region.getId())
+        .build();
+  }
 }

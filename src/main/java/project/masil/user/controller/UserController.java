@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import project.masil.community.dto.request.RegionUpdateRequest;
+import project.masil.community.dto.response.RegionIdResponse;
 import project.masil.global.response.BaseResponse;
 import project.masil.global.security.CustomUserDetails;
 import project.masil.user.dto.request.NicknameUpdateRequest;
@@ -69,5 +71,16 @@ public class UserController {
 
   }
 
+  // /api/users/{userId}/region
+  @Operation(summary = "사용자 지역 정보 변경 API", description = "사용자의 지역 정보를 변경하는 API")
+  @PatchMapping("/me/region/")
+  public ResponseEntity<BaseResponse<RegionIdResponse>> updateRegion(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @RequestBody @Valid RegionUpdateRequest regionUpdateRequest) {
+    RegionIdResponse updatedRegion = userService.updateRegion(
+        userDetails.getUser().getId(),
+        regionUpdateRequest);
+    return ResponseEntity.ok(BaseResponse.success("지역 정보 변경 성공", updatedRegion));
+  }
 
 }

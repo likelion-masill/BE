@@ -84,5 +84,8 @@ public class User extends BaseTimeEntity {
     this.businessVerified = true;
   }
 
+  public void updateRegion(Region region) {
+    this.region = region;
+  }
 
 }
