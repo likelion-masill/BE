@@ -32,12 +32,9 @@ public class SignUpRequest {
   @Schema(description = "별명", example = "비쿠")
   private String username;
 
-  @NotBlank(message = "휴대폰 번호는 필수입니다.")
-  @Pattern(
-      regexp = "^010\\d{8}$",
-      message = "휴대폰 번호는 올바른 형식이어야 합니다.")
-  @Schema(description = "휴대폰 번호", example = "01012345678")
-  private String phoneNumber;
+  @NotBlank(message = "지역 ID는 필수입니다.")
+  @Schema(description = "지역 ID", example = "1")
+  private Long regionId;
 
 
 }

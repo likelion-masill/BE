@@ -1,6 +1,7 @@
 package project.masil.user.converter;
 
 import org.springframework.stereotype.Component;
+import project.masil.community.entity.Region;
 import project.masil.user.dto.request.SignUpRequest;
 import project.masil.user.dto.response.SignUpResponse;
 import project.masil.user.entity.Role;
@@ -14,15 +15,17 @@ public class UserConverter {
         .userId(user.getId())
         .nickname(user.getUsername())
         .email(user.getEmail())
+        .regionId(user.getRegion().getId())
         .build();
   }
 
-  public User toEntity(SignUpRequest request, String encodedPassword) {
+  public User toEntity(SignUpRequest request, String encodedPassword, Region region) {
     return User.builder()
         .email(request.getEmail())
         .password(encodedPassword)
         .username(request.getUsername())
         .role(Role.User)
+        .region(region)
         .build();
   }
 }

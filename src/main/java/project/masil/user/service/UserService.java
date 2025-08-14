@@ -1,5 +1,6 @@
 package project.masil.user.service;
 
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +8,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import project.masil.community.entity.Region;
+import project.masil.community.exception.RegionErrorCode;
+import project.masil.community.repository.RegionRepository;
 import project.masil.global.config.S3.AmazonS3Manager;
 import project.masil.global.config.S3.Uuid;
 import project.masil.global.config.S3.UuidRepository;
@@ -29,6 +33,7 @@ public class UserService {
   private final PasswordEncoder passwordEncoder;
   private final UserConverter userConverter;
   private final UuidRepository uuidRepository;
+  private final RegionRepository regionRepository;
   private final AmazonS3Manager s3Manager;
 
   @Transactional
@@ -46,8 +51,13 @@ public class UserService {
     // 비밀번호 인코딩
     String encodePassword = passwordEncoder.encode(request.getPassword());
 
+    Optional<Region> region = regionRepository.findById(request.getRegionId())
+        .or(() -> {
+          log.error("[서비스] 회원가입 실패: 유효하지 않은 지역 ID = {}", request.getRegionId());
+          throw new CustomException(RegionErrorCode.REGION_NOT_FOUND);
+        });
     // UserMapper를 통해 Entity 생성
-    User user = userConverter.toEntity(request, encodePassword);
+    User user = userConverter.toEntity(request, encodePassword, region.get());
 
     // 저장 및 로깅
     User savedUser = userRepository.save(user);

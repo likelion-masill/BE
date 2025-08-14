@@ -18,5 +18,7 @@ public class SignUpResponse {
   @Schema(description = "회원가입된 사용자 아이디", example = "jhjk1234@gmail.com")
   private String email;
 
+  @Schema(description = "지역 ID", example = "1")
+  private Long regionId;
 
 }
