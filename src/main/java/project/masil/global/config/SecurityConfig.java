@@ -47,7 +47,7 @@ public class SecurityConfig {
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
                     .permitAll()
                     // 인증 없이 허용할 경로
-                    .requestMatchers("/users/sign-up", "/auth/login")
+                    .requestMatchers("/users/sign-up", "/auth/login", "/users/nickname/check")
                     .permitAll()
 
                     // EventPost 조회 관련 API 인증 허용

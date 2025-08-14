@@ -11,11 +11,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import project.masil.global.response.BaseResponse;
 import project.masil.global.security.CustomUserDetails;
+import project.masil.mypage.dto.request.OwnerVerifyRequest;
 import project.masil.mypage.dto.response.PostResponse;
 import project.masil.mypage.service.MyPageService;
 
@@ -62,6 +65,19 @@ public class MyPageController {
     Page<PostResponse> result = myPageService.getMyFavoritePostList(
         userDetails.getUser().getId(), pageable);
     return ResponseEntity.ok(BaseResponse.success("내가 관심 있는 게시글 목록 조회 성공", result));
+  }
+
+  // 사업자 인증
+  // 지금 구현
+  @Operation(summary = "사업자 인증 요청",
+      description = "사업자 인증을 위한 요청을 처리합니다.")
+  @PostMapping("/verify-owner")
+  public ResponseEntity<BaseResponse<Void>> verifyOwner(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @RequestBody OwnerVerifyRequest request) {
+    myPageService.verifyOwner(userDetails.getUser().getId(), request);
+    return ResponseEntity.ok(
+        BaseResponse.success("사업자 인증 요청이 성공적으로 처리되었습니다.", null));
   }
 
 

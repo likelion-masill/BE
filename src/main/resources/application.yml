@@ -52,3 +52,7 @@ cloud:
     credentials:
       accessKey: ${AWS_ACCESS_KEY_ID}
       secretKey: ${AWS_SECRET_ACCESS_KEY}
+
+open-data:
+  api-key: ${OPENDATA_API_KEY}
+  base-url: https://api.odcloud.kr/api/nts-businessman/v1
