@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
+import project.masil.community.enums.EventType;
 
 @Getter
 @Builder
@@ -52,4 +53,7 @@ public class EventPostResponse {
 
   @Schema(description = "이벤트 게시글 생성시각")
   private LocalDateTime createdAt;
+
+  @Schema(description = "이벤트 타입")
+  private EventType eventType;
 }

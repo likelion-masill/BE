@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import project.masil.community.dto.request.EventPostRequest;
 import project.masil.community.dto.response.EventPostResponse;
+import project.masil.community.enums.EventType;
 import project.masil.community.service.EventPostService;
 import project.masil.global.response.BaseResponse;
 import project.masil.global.security.CustomUserDetails;
@@ -42,7 +43,7 @@ public class EventPostController {
   public ResponseEntity<BaseResponse<EventPostResponse>> createEvent(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @RequestPart("request") @Valid EventPostRequest eventPostRequest,
-      @RequestPart(value = "eventImages", required = false) List<MultipartFile> images
+      @RequestPart(value = "images", required = false) List<MultipartFile> images // ← EventErrorCode에서 예외처리
   ) {
     EventPostResponse response = eventPostService.createEvent(userDetails.getUser().getId(),
         eventPostRequest, images);
@@ -56,6 +57,7 @@ public class EventPostController {
     return ResponseEntity.ok(BaseResponse.success("이벤트 단일 조회 성공", response));
   }
 
+  @Operation(summary = "이벤트 리스트 전체 조회", description = "전체 이벤트 리스트 조회")
   @GetMapping("/all")
   public ResponseEntity<BaseResponse<Page<EventPostResponse>>> getAllEvents(
       @RequestParam(defaultValue = "1") Long regionId, // ← 지역 ID를 받는 파라미터 추가
@@ -68,8 +70,28 @@ public class EventPostController {
     Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
     Pageable pageable = PageRequest.of(pageIndex, size, sort);
 
-    Page<EventPostResponse> response = eventPostService.getEventList(regionId, pageable);
+    Page<EventPostResponse> response = eventPostService.getEventAll(regionId, pageable);
     return ResponseEntity.ok(BaseResponse.success("이벤트 리스트 조회 성공", response));
+  }
+
+  @Operation(summary = "특정 이벤트 타입 리스트 조회", description = "특정 이벤트 타입의 이벤트 리스트 조회")
+  @GetMapping("/eventType/list")
+  public ResponseEntity<BaseResponse<Page<EventPostResponse>>> getEventTypeList(
+      @RequestParam(defaultValue = "1") Long regionId,
+      @RequestParam EventType eventType,
+      @RequestParam(defaultValue = "1") int page,          // ← 1부터 받기
+      @RequestParam(defaultValue = "20") int size,
+      @RequestParam(defaultValue = "createdAt") String sortBy,
+      @RequestParam(defaultValue = "desc") String sortDir
+  ) {
+    // 페이지 번호를 0 기반으로 변환 (최소 0 보장)
+    int pageIndex = Math.max(0, page - 1);
+    // 정렬 방향 및 기준 설정
+    Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
+    Pageable pageable = PageRequest.of(pageIndex, size, sort);
+    Page<EventPostResponse> eventTypeList = eventPostService.getEventTypeList(regionId, eventType,pageable);
+    return ResponseEntity.ok(BaseResponse.success("이벤트 카테고리별 리스트 조회 성공", eventTypeList));
+
   }
 
   @Operation(summary = "이벤트 수정", description = "이벤트 페이지에서 이벤트 수정하기 눌렀을때 실행되는 API")

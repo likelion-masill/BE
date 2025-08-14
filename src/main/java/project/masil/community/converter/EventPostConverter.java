@@ -13,6 +13,7 @@ public class EventPostConverter {
     return EventPostResponse.builder()
         .eventId(eventPost.getId())
         .username(eventPost.getUser().getUsername())
+        .eventType(eventPost.getEventType())
         .title(eventPost.getTitle())
         .content(eventPost.getContent())
         .summary(eventPost.getSummary())
