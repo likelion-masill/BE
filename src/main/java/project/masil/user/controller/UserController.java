@@ -72,7 +72,7 @@ public class UserController {
   }
 
   @Operation(summary = "사용자 지역 정보 변경 API", description = "사용자의 지역 정보를 변경하는 API")
-  @PatchMapping("/me/region/")
+  @PatchMapping("/me/region")
   public ResponseEntity<BaseResponse<RegionIdResponse>> updateRegion(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @RequestBody @Valid RegionUpdateRequest regionUpdateRequest) {
