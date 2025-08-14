@@ -1,6 +1,8 @@
 package project.masil.community.enums;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public enum EventType {
   FLEA_MARKET("플리마켓"),
   CULTURE_ART("문화/예술"),
@@ -15,5 +17,15 @@ public enum EventType {
 
   public String getDescription() {
     return description;
+  }
+
+  @JsonCreator
+  public static EventType from(String value) {
+    for (EventType type : EventType.values()) {
+      if (type.name().equalsIgnoreCase(value) || type.getDescription().equals(value)) {
+        return type;
+      }
+    }
+    throw new IllegalArgumentException("잘못된 EventType 값: " + value);
   }
 }
