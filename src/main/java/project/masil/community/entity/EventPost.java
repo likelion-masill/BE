@@ -37,7 +37,7 @@ public class EventPost extends Post {
   private Region region;
 
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
+  @Column(name = "eventType", length = 32, nullable = false)
   private EventType eventType;
 
   @Column(nullable = false)
