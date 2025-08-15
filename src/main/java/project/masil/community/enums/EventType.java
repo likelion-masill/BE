@@ -7,7 +7,13 @@ public enum EventType {
   FLEA_MARKET("플리마켓"),
   CULTURE_ART("문화/예술"),
   OUTDOOR_ACTIVITY("야외활동"),
-  FOOD("먹거리");
+  VOLUNTEER("자원봉사"),
+  FESTIVAL("축제"),
+  STORE_EVENT("가게행사"),
+  EDUCATION("교육"),
+  ETC("기타");
+
+
 
   private final String description;
 
