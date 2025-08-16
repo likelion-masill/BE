@@ -9,7 +9,7 @@ import project.masil.community.entity.EventPost;
 @Component
 public class EventPostConverter {
 
-  public EventPostResponse toResponse(EventPost eventPost) {
+  public EventPostResponse toResponse(EventPost eventPost, boolean isLiked) {
     return EventPostResponse.builder()
         .eventId(eventPost.getId())
         .username(eventPost.getUser().getUsername())
@@ -35,6 +35,7 @@ public class EventPostConverter {
         .favoriteCount(eventPost.getFavoriteCount())
         .commentCount(eventPost.getCommentCount())
         .location(eventPost.getLocation())
+        .isLiked(isLiked)
         .build();
   }
 

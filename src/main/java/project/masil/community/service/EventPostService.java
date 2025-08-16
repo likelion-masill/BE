@@ -3,6 +3,7 @@ package project.masil.community.service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +20,10 @@ import project.masil.community.entity.Region;
 import project.masil.community.enums.EventType;
 import project.masil.community.enums.PostType;
 import project.masil.community.exception.EventErrorCode;
+import project.masil.community.exception.PostErrorCode;
 import project.masil.community.exception.RegionErrorCode;
 import project.masil.community.repository.EventPostRepository;
+import project.masil.community.repository.FavoriteRepository;
 import project.masil.community.repository.RegionRepository;
 import project.masil.global.config.S3.AmazonS3Manager;
 import project.masil.global.config.S3.Uuid;
@@ -40,9 +43,26 @@ public class EventPostService {
 
   private final EventPostConverter converter;
 
+  //좋아요 여부
+
   //s3
   private final UuidRepository uuidRepository;
   private final AmazonS3Manager s3Manager;
+  private final FavoriteRepository favoriteRepository;
+
+  /**
+   * 이벤트 작성자 userId를 반환
+   * - 채팅 서비스에서 "이벤트 컨텍스트로 채팅 시작" 시 대상 사용자 검증 용도
+   * - 존재하지 않으면 예외 (PostErrorCode.POST_NOT_FOUND)
+   * @param eventId
+   * @return
+   */
+  @Transactional(readOnly = true)
+  public Long getEventAuthorId(Long eventId) {
+    EventPost eventPost = eventPostRepository.findById(eventId)
+        .orElseThrow(() -> new CustomException(PostErrorCode.POST_NOT_FOUND));
+    return eventPost.getUser().getId();
+  }
 
   /**
    * 이벤트 생성 로직
@@ -107,7 +127,7 @@ public class EventPostService {
 
     EventPost savedEventPost = eventPostRepository.save(eventPost);
 
-    return converter.toResponse(savedEventPost);
+    return converter.toResponse(savedEventPost, false);
 
 
   }
@@ -116,39 +136,73 @@ public class EventPostService {
    * 이벤트 단일 조회 로직
    *
    * @param eventPostId
+   * @param userId
    * @return
    */
-  public EventPostResponse getEventPost(Long eventPostId) {
+  public EventPostResponse getEventPost(Long eventPostId, Long userId) {
     //이벤트가 없으면 예외처리
     EventPost eventPost = eventPostRepository.findById(eventPostId)
         .orElseThrow(() -> new CustomException(EventErrorCode.EVENT_NOT_FOUND));
 
-    return converter.toResponse(eventPost);
+    boolean isLiked = false;
+    if (userId != null) {
+      isLiked = favoriteRepository.existsByUserIdAndPostId(userId, eventPost.getId());
+    }
+
+    return converter.toResponse(eventPost, isLiked);
   }
 
   /**
-   * 지역ID로 이벤트 전체 리스트 조회
+   * 지역ID로 이벤트 전체 리스트 조회 + 로그인한 사용자가 좋아요 눌렀는지까지 한 번에 계산
    *
    * @param pageable
+   * @param userId
    * @return
    */
   @Transactional(readOnly = true)
-  public Page<EventPostResponse> getEventAll(Long regionId, Pageable pageable) {
+  public Page<EventPostResponse> getEventAll(Long regionId, Pageable pageable, Long userId) {
     Page<EventPost> page = eventPostRepository.findAllByRegionIdOrderByCreatedAtDesc(regionId, pageable);
-    return page.map(converter::toResponse);
+
+    // 1) 비로그인(=userId 없음)이라면 isLiked는 전부 false로 내려보냄
+    if (userId == null) {
+      return page.map(post -> converter.toResponse(post, false));
+    }
+
+    // 2) 현재 페이지에 담긴 이벤트들의 ID만 뽑아옴 (배치 처리를 위한 준비)
+    List<Long> postIds = page.getContent().stream().map(EventPost::getId).toList();
+
+    // 3) Favorite 테이블에서 "userId가 좋아요한 postId들"만 한 번에 조회 (IN 절 사용)
+    Set<Long> likedIds = favoriteRepository.findLikedPostIds(userId, postIds);
+
+    // 4) 각 게시글이 likedIds에 포함되어 있으면 isLiked=true로 DTO 변환 => 해당 이벤트 게시글Id가 내가 좋아요한 이벤트 게시글 ID(likedIds)인지 확인
+    return page.map(post -> converter.toResponse(post, likedIds.contains(post.getId())));
   }
 
   /**
-   * 지역ID + 이벤트 타입으로 이벤트 게시글 리스트 조회
+   * 지역ID + 이벤트 타입으로 이벤트 게시글 리스트 조회 + 로그인한 사용자가 좋아요 눌렀는지까지 한 번에 계산
    * @param regionId
    * @param eventType
    * @param pageable
    * @return
    */
   @Transactional(readOnly = true)
-  public Page<EventPostResponse> getEventTypeList(Long regionId, EventType eventType, Pageable pageable) {
+  public Page<EventPostResponse> getEventTypeList(Long regionId, EventType eventType, Pageable pageable, Long userId) {
     Page<EventPost> page = eventPostRepository.findByRegionIdAndEventType(regionId, eventType, pageable);
-    return page.map(converter::toResponse);
+
+    // 1) 비로그인(=userId 없음)이라면 isLiked는 전부 false로 내려보냄
+    if (userId == null) {
+      return page.map(post -> converter.toResponse(post, false));
+    }
+
+    // 2) 현재 페이지에 담긴 이벤트들의 ID만 뽑아옴 (배치 처리를 위한 준비)
+    List<Long> postIds = page.getContent().stream().map(EventPost::getId).toList();
+
+    // 3) Favorite 테이블에서 "userId가 좋아요한 postId들"만 한 번에 조회 (IN 절 사용)
+    Set<Long> likedIds = favoriteRepository.findLikedPostIds(userId, postIds);
+
+    // 4) 각 게시글이 likedIds에 포함되어 있으면 isLiked=true로 DTO 변환 => 해당 이벤트 게시글Id가 내가 좋아요한 이벤트 게시글 ID(likedIds)인지 확인
+    return page.map(post -> converter.toResponse(post, likedIds.contains(post.getId())));
+
   }
 
   /**
@@ -206,8 +260,9 @@ public class EventPostService {
       eventPost.addImages(newUrls);
     }
 
+    boolean isLiked = favoriteRepository.existsByUserIdAndPostId(userId, eventPost.getId());
     // @Transactional이 있어서 변경감지로 저장되므로 save() 불필요. 항상 마지막에 반환
-    return converter.toResponse(eventPost);
+    return converter.toResponse(eventPost, isLiked);
   }
 
   public Boolean deleteEvent(Long eventPostId) {
@@ -216,5 +271,6 @@ public class EventPostService {
     eventPostRepository.delete(eventPost);
     return true;
   }
+
 
 }
