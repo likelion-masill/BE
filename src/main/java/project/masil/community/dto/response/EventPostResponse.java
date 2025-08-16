@@ -27,7 +27,7 @@ public class EventPostResponse {
   @Schema(description = "이벤트 내용", example = "성북 청년의 날 이벤트 내용")
   private String content;
 
-  @Schema(description = "이벤트 장소", example = "서울특별시 성북구 서경로 124")
+  @Schema(description = "이벤트 세부 장소", example = "서경로 124")
   private String location;
 
   @Schema(description = "이벤트 시작 날짜 (KST)", example = "2025-08-08T19:00:00")
@@ -56,4 +56,7 @@ public class EventPostResponse {
 
   @Schema(description = "이벤트 타입")
   private EventType eventType;
+
+  @Schema(description = "좋아요 여부")
+  private boolean isLiked;
 }
