@@ -32,8 +32,8 @@ public class EventPostRequest {
   @Schema(description = "이벤트 내용", example = "마실 이벤트 내용입니다.")
   private String content;
 
-  @NotBlank(message = "이벤트 장소는 필수입니다.")
-  @Schema(description = "이벤트 장소", example = "서울시 성부구 서경로 184")
+  @NotBlank(message = "이벤트 세부장소는 필수입니다.")
+  @Schema(description = "이벤트 세부장소", example = "서경로 184")
   private String location;
 
   @NotNull(message = "시작 날짜는 필수입니다.")

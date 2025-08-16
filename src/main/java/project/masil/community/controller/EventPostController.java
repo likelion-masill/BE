@@ -52,14 +52,15 @@ public class EventPostController {
 
   @Operation(summary = "이벤트 단일 조회", description = "이벤트 단일 조회 API")
   @GetMapping("/{eventId}")
-  public ResponseEntity<BaseResponse<EventPostResponse>> getEvent(@PathVariable Long eventId) {
-    EventPostResponse response = eventPostService.getEventPost(eventId);
+  public ResponseEntity<BaseResponse<EventPostResponse>> getEvent(@PathVariable Long eventId, @AuthenticationPrincipal CustomUserDetails userDetails) {
+    EventPostResponse response = eventPostService.getEventPost(eventId, userDetails.getUser().getId());
     return ResponseEntity.ok(BaseResponse.success("이벤트 단일 조회 성공", response));
   }
 
   @Operation(summary = "이벤트 리스트 전체 조회", description = "전체 이벤트 리스트 조회")
   @GetMapping("/all")
   public ResponseEntity<BaseResponse<Page<EventPostResponse>>> getAllEvents(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
       @RequestParam(defaultValue = "1") Long regionId, // ← 지역 ID를 받는 파라미터 추가
       @RequestParam(defaultValue = "1") int page,          // ← 1부터 받기
       @RequestParam(defaultValue = "20") int size,
@@ -70,13 +71,14 @@ public class EventPostController {
     Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
     Pageable pageable = PageRequest.of(pageIndex, size, sort);
 
-    Page<EventPostResponse> response = eventPostService.getEventAll(regionId, pageable);
+    Page<EventPostResponse> response = eventPostService.getEventAll(regionId, pageable, userDetails.getUser().getId());
     return ResponseEntity.ok(BaseResponse.success("이벤트 리스트 조회 성공", response));
   }
 
   @Operation(summary = "특정 이벤트 타입 리스트 조회", description = "특정 이벤트 타입의 이벤트 리스트 조회")
   @GetMapping("/eventType/list")
   public ResponseEntity<BaseResponse<Page<EventPostResponse>>> getEventTypeList(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
       @RequestParam(defaultValue = "1") Long regionId,
       @RequestParam EventType eventType,
       @RequestParam(defaultValue = "1") int page,          // ← 1부터 받기
@@ -89,7 +91,7 @@ public class EventPostController {
     // 정렬 방향 및 기준 설정
     Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
     Pageable pageable = PageRequest.of(pageIndex, size, sort);
-    Page<EventPostResponse> eventTypeList = eventPostService.getEventTypeList(regionId, eventType,pageable);
+    Page<EventPostResponse> eventTypeList = eventPostService.getEventTypeList(regionId, eventType, pageable, userDetails.getUser().getId());
     return ResponseEntity.ok(BaseResponse.success("이벤트 카테고리별 리스트 조회 성공", eventTypeList));
 
   }
