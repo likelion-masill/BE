@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import project.masil.community.dto.response.FavoriteResponse;
@@ -24,14 +25,13 @@ public class FavoriteController {
   private final FavoriteService favoriteService;
 
   @Operation(summary = "이벤트 게시글 관심목록 토글", description = "이벤트 게시글의 관심 목록 상태를 토글합니다.")
-  @GetMapping("/favorites")
+  @PostMapping("/favorites")
   public ResponseEntity<BaseResponse<FavoriteResponse>> toggleEventFavorite(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @PathVariable Long eventId) {
     return ResponseEntity.ok(
         BaseResponse.success("이벤트 게시글 토글 성공",
-            favoriteService.toggleFavorite(userDetails.getUser().getId(), eventId,
-                PostType.EVENT)));
+            favoriteService.toggleFavorite(userDetails.getUser().getId(), eventId, PostType.EVENT)));
   }
 
   @Operation(summary = "소모임 게시글 관심목록 토글", description = "소모임 게시글의 관심 목록 상태를 토글합니다.")
