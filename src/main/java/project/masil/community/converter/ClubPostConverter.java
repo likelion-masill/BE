@@ -10,7 +10,7 @@ public class ClubPostConverter {
       ClubPost clubPost, boolean isLiked) {
     return ClubPostDetailResponse.builder()
         .clubId(clubPost.getId())
-        .username(clubPost.getUser().getUsername())
+        .username(clubPost.getUser().getProfileImageUrlOrDefault())
         .userImage(clubPost.getUser().getProfileImageUrl())
         .title(clubPost.getTitle())
         .location(clubPost.getLocation())
