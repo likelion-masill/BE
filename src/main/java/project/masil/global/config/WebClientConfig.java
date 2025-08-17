@@ -7,11 +7,9 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -52,9 +50,7 @@ public class WebClientConfig {
         .filter(logResponse());
   }
 
-  @Bean
-  @Primary
-  @Qualifier("opendataClient")
+  @Bean(name = "opendataWebClient")
   public WebClient opendataClient(WebClient.Builder builder) {
     return builder.clone()
         .baseUrl(props.getBaseUrl())
@@ -63,8 +59,7 @@ public class WebClientConfig {
         .build();
   }
 
-  @Bean
-  @Qualifier("aiClient")
+  @Bean(name = "aiWebClient")
   public WebClient aiClient(WebClient.Builder builder) {
     return builder.clone()
         .baseUrl(aiProps.getBaseUrl())
