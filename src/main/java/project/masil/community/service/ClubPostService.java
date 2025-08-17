@@ -31,6 +31,14 @@ public class ClubPostService {
   private final EventPostRepository eventPostRepository;
   private final UserRepository userRepository;
 
+  @Transactional(readOnly = true)
+  public Long getClubLeaderUserId(Long clubId) {
+    ClubPost clubPost = clubPostRepository.findById(clubId)
+        .orElseThrow(() -> new CustomException(ClubPostErrorCode.CLUB_POST_NOT_FOUND));
+    return clubPost.getUser().getId();
+
+  }
+
   /**
    * 소모임 게시글을 생성합니다.
    *
