@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -18,16 +19,21 @@ import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
+import project.masil.global.config.props.AiServerProps;
 import project.masil.global.config.props.OpenDataProps;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
 @Configuration
-@EnableConfigurationProperties(OpenDataProps.class)
+@EnableConfigurationProperties({
+    OpenDataProps.class,
+    AiServerProps.class
+})
 @RequiredArgsConstructor
 public class WebClientConfig {
 
   private final OpenDataProps props;
+  private final AiServerProps aiProps;
 
   @Bean
   public WebClient.Builder webClientBuilder() {
@@ -47,12 +53,22 @@ public class WebClientConfig {
   }
 
   @Bean
+  @Primary
   @Qualifier("opendataClient")
   public WebClient opendataClient(WebClient.Builder builder) {
-    return builder
+    return builder.clone()
         .baseUrl(props.getBaseUrl())
         // 모든 요청에 serviceKey를 쿼리스트링으로 자동 추가
         .filter(appendServiceKeyQuery(props.getApiKey()))
+        .build();
+  }
+
+  @Bean
+  @Qualifier("aiClient")
+  public WebClient aiClient(WebClient.Builder builder) {
+    return builder.clone()
+        .baseUrl(aiProps.getBaseUrl())
+        .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
         .build();
   }
 
