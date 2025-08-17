@@ -1,23 +1,21 @@
 package project.masil.mypage.service;
 
-import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.client.WebClient;
 import project.masil.community.entity.Post;
 import project.masil.community.repository.FavoriteRepository;
 import project.masil.community.repository.PostRepository;
 import project.masil.global.exception.CustomException;
+import project.masil.infrastructure.client.opendata.OpenDataClient;
+import project.masil.infrastructure.client.opendata.dto.BusinessInfoPayload;
+import project.masil.infrastructure.client.opendata.dto.OwnerVerifyApiResponse;
 import project.masil.mypage.converter.MyPageConverter;
-import project.masil.mypage.dto.request.BusinessInfo;
 import project.masil.mypage.dto.request.OwnerVerifyRequest;
-import project.masil.mypage.dto.response.OwnerVerifyResponse;
 import project.masil.mypage.dto.response.PostResponse;
 import project.masil.mypage.exception.MyPageErrorCode;
 import project.masil.user.entity.User;
@@ -32,7 +30,7 @@ public class MyPageService {
   private final UserRepository userRepository;
   private final PostRepository postRepository;
   private final FavoriteRepository favoriteRepository;
-  private final @Qualifier("opendataClient") WebClient openDataClient;
+  private final OpenDataClient openDataClient;
 
 
   /**
@@ -67,44 +65,50 @@ public class MyPageService {
         .map(MyPageConverter::toPostResponse);
   }
 
-  // verifyOwner
+  /**
+   * 사업자 인증을 수행합니다.
+   *
+   * @param userId        사용자 ID
+   * @param verifyRequest 사업자 인증 요청 정보
+   * @throws CustomException 인증 실패 시 예외 발생
+   */
   @Transactional
   public void verifyOwner(Long userId, OwnerVerifyRequest verifyRequest) {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
-    // 요청 바디 생성
-    BusinessInfo businessInfo = new BusinessInfo(
+    BusinessInfoPayload payload = new BusinessInfoPayload(
         verifyRequest.getBusinessNumber(),
-        verifyRequest.getOpeningDate(),
+        verifyRequest.getOpeningDate(),  // 예: "20250112" (YYYYMMDD)
         verifyRequest.getBusinessName()
     );
-    Map<String, Object> requestBody = Map.of("businesses", List.of(businessInfo));
-    // API 호출
-    OwnerVerifyResponse response = openDataClient.post()
-        .uri(uriBuilder -> uriBuilder
-            .path("/validate")
-            .queryParam("returnType", "JSON")
-            .build())
-        .bodyValue(requestBody)
-        .retrieve()
-        .bodyToMono(OwnerVerifyResponse.class)
-        .block();
 
-    // 결과 검증
-    if (response != null && "OK".equals(response.getStatus_code())) {
-      Map<String, Object> data = response.getData().get(0);
-      String valid = (String) data.get("valid");
+    OwnerVerifyApiResponse response = openDataClient.verifyBusiness(payload);
+
+    if (response != null
+        && "OK".equals(response.getStatusCode())
+        && response.getData() != null
+        && !response.getData().isEmpty()) {
+
+      // data[0]에서 valid 코드 확인
+      Map<String, Object> first = response.getData().get(0);
+
+      // valid가 문자열이 아닐 수 있으니 안전 변환
+      Object validObj = first.get("valid");
+      String valid = (validObj != null) ? String.valueOf(validObj) : null;
+
+      log.info("사업자 인증 응답 valid: {}", valid);
       if ("01".equals(valid)) {
         user.verifyBusiness();
-      } else {
-        throw new CustomException(MyPageErrorCode.OWNER_VERIFICATION_FAILED);
+        return;
       }
-    } else {
-      log.error("사업자 인증 API 호출 실패: {}", response);
-      throw new CustomException(MyPageErrorCode.OWNER_VERIFICATION_API_ERROR);
+      throw new CustomException(MyPageErrorCode.OWNER_VERIFICATION_FAILED);
     }
 
+    // 여기로 오면 외부 API 실패 혹은 비정상 응답
+    log.error("사업자 인증 API 실패 또는 비정상 응답: {}", response);
+    throw new CustomException(MyPageErrorCode.OWNER_VERIFICATION_API_ERROR);
   }
+
 
 }
