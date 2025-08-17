@@ -45,4 +45,7 @@ public class ClubPostDetailResponse {
 
   @Schema(description = "게시글 생성 시간", example = "2025-08-01T10:00:00")
   private LocalDateTime createdAt;
+
+  @Schema(description = "좋아요 여부")
+  private boolean isLiked;
 }
