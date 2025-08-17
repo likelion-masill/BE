@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,11 +30,12 @@ public class FavoriteController {
       @PathVariable Long eventId) {
     return ResponseEntity.ok(
         BaseResponse.success("이벤트 게시글 토글 성공",
-            favoriteService.toggleFavorite(userDetails.getUser().getId(), eventId, PostType.EVENT)));
+            favoriteService.toggleFavorite(userDetails.getUser().getId(), eventId,
+                PostType.EVENT)));
   }
 
   @Operation(summary = "소모임 게시글 관심목록 토글", description = "소모임 게시글의 관심 목록 상태를 토글합니다.")
-  @GetMapping("/clubs/{clubId}/favorites")
+  @PostMapping("/clubs/{clubId}/favorites")
   public ResponseEntity<BaseResponse<FavoriteResponse>> toggleClubFavorite(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @PathVariable Long eventId,
