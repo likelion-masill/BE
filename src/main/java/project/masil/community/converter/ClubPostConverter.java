@@ -7,7 +7,7 @@ import project.masil.community.entity.ClubPost;
 public class ClubPostConverter {
 
   public static ClubPostDetailResponse toClubPostDetailResponse(
-      ClubPost clubPost) {
+      ClubPost clubPost, boolean isLiked) {
     return ClubPostDetailResponse.builder()
         .clubId(clubPost.getId())
         .username(clubPost.getUser().getUsername())
@@ -20,12 +20,12 @@ public class ClubPostConverter {
         .commentCount(clubPost.getCommentCount())
         .images(clubPost.getEventPost().getEventImages())
         .createdAt(clubPost.getCreatedAt())
+        .isLiked(isLiked)
         .build();
   }
 
-  // TODO : CoverImage 디폴트 이미지 설정 필요
   public static ClubPostSummaryResponse toClubPostSummaryResponse(
-      ClubPost clubPost, String coverImage) {
+      ClubPost clubPost, String coverImage, boolean isLiked) {
     return ClubPostSummaryResponse.builder()
         .clubId(clubPost.getId())
         .title(clubPost.getTitle())
@@ -33,9 +33,9 @@ public class ClubPostConverter {
         .startAt(clubPost.getStartAt())
         .favoriteCount(clubPost.getFavoriteCount())
         .commentCount(clubPost.getCommentCount())
-        .coverImage(coverImage == null ? null
-            : coverImage)
+        .coverImage(coverImage)
         .createdAt(clubPost.getCreatedAt())
+        .isLiked(isLiked)
         .build();
   }
 
