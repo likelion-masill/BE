@@ -49,6 +49,9 @@ dependencies {
     // WebFlux 설정
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
+    // WebSocket 설정
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
 }
 
 tasks.named('test') {
