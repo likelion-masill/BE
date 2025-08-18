@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.springframework.util.StringUtils;
 import project.masil.community.entity.Favorite;
 import project.masil.community.entity.Region;
 import project.masil.global.common.BaseTimeEntity;
@@ -75,6 +76,13 @@ public class User extends BaseTimeEntity {
   @Setter
   @Column
   private String profileImageUrl;
+
+
+  public String getProfileImageUrlOrDefault() {
+    return (StringUtils.hasText(profileImageUrl))
+        ? profileImageUrl
+        : "https://masilbucket.s3.ap-northeast-2.amazonaws.com/profile/3eaf3db0-863b-4475-95d4-7d4dc9caba05";
+  }
 
   public void createRefreshToken(String refreshToken) {
     this.refreshToken = refreshToken;

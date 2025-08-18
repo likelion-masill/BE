@@ -4,6 +4,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import project.masil.community.converter.CommentConverter;
 import project.masil.community.dto.response.CommentResponse;
 import project.masil.community.entity.Comment;
@@ -27,6 +28,20 @@ public class CommentService {
   private final CommentRepository commentRepository;
   private final UserRepository userRepository;
   private final PostRepository postRepository;
+
+  /**
+   * 댓글 작성자 userId를 반환
+   * - 채팅 서비스에서 "댓글 컨텍스트ID로 채팅 시작" 시 대상 사용자 검증 용도
+   * - 존재하지 않으면 예외(CommentErrorCode.COMMENT_NOT_FOUND)
+   * @param commentId
+   * @return
+   */
+  @Transactional(readOnly = true)
+  public Long getCommentAuthorId(Long commentId) {
+    Comment comment = commentRepository.findById(commentId)
+        .orElseThrow(() -> new CustomException(CommentErrorCode.COMMENT_NOT_FOUND));
+    return comment.getUser().getId();
+  }
 
   /**
    * 댓글을 생성합니다.
@@ -56,6 +71,7 @@ public class CommentService {
         .user(user)
         .content(content)
         .build();
+    post.incrementCommentCount();
     Comment saved = commentRepository.save(comment);
 
     return CommentConverter.toCommentResponse(saved);
@@ -118,6 +134,7 @@ public class CommentService {
         .user(user)
         .content(content)
         .build();
+    post.incrementCommentCount();
 
     Comment savedChildComment = commentRepository.save(childComment);
 
