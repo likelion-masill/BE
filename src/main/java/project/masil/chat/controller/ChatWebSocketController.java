@@ -1,25 +1,16 @@
 package project.masil.chat.controller;
 
 import java.security.Principal;
-import java.util.Map;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
-import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
-import org.springframework.messaging.simp.SimpMessageType;
-import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Controller;
 import project.masil.chat.dto.request.SendMessageRequest;
 import project.masil.chat.dto.response.ChatMessageResponse;
 import project.masil.chat.dto.response.ChatRoomResponse;
-import project.masil.chat.exception.ChatErrorCode;
 import project.masil.chat.service.ChatService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import project.masil.chat.websocket.WebSocketPrincipal;
-import project.masil.global.exception.CustomException;
 
 /**
  * [ChatWebSocketController]
@@ -61,57 +52,40 @@ public class ChatWebSocketController {
   public void sendMessage(
       @DestinationVariable Long roomId,
       SendMessageRequest payload,
-      Principal principal,
-      Message<?> message
+      Principal principal
   ) {
     // 1) STOMP 세션에서 userId 꺼내기
-    Long userId = extractUserId(principal, message); //보내는 사람 userId
-    log.info("[WS] RECEIVED message roomId={}, senderId={}, content={}",
-            roomId, userId, payload.getContent());   // ✅ 수신 로그 추가
+    Long userId = Long.valueOf(principal.getName()); //보내는 사람 userId
+    log.info("[WS] IN rooms/{}/messages by user={} payload={}", roomId, userId, payload);
+
 
     // 2) 저장/캐시/unread 반영
     ChatMessageResponse saved = chatService.sendMessage(roomId, userId, payload);
 
     // 3) 수신자(상대방) 식별
     Long otherUserId = chatService.getOtherParticipantId(roomId, userId);
-    log.info("[WS] SEND roomId={} sender={} other={}", roomId, userId, otherUserId);
 
-    // ✅ JSON 헤더(콘텐츠 타입) 명시
-    var headers = SimpMessageHeaderAccessor.create();
-    headers.setContentType(org.springframework.util.MimeTypeUtils.APPLICATION_JSON);
-    headers.setLeaveMutable(true);
+    // 4) 보낸 사람/상대방 각각 "개인 큐"로 메시지 푸시
+    //    - 클라는 "/user/queue/rooms.{roomId}"를 구독해야 수신
+    String destinationMy = "/queue/rooms." + roomId;
+    String destinationOther = "/queue/rooms." + roomId;
 
-    String dest = "/queue/rooms." + roomId;
+    log.info("[WS] PUSH start dest={} my={} other={} body={}",
+        destinationMy, userId, otherUserId, saved);
 
-    // 내 화면
-    broker.convertAndSendToUser(String.valueOf(userId), dest, saved, headers.getMessageHeaders());
-    // 상대 화면
-    broker.convertAndSendToUser(String.valueOf(otherUserId), dest, saved, headers.getMessageHeaders());
+    broker.convertAndSendToUser(String.valueOf(userId), destinationMy, saved);
+    broker.convertAndSendToUser(String.valueOf(otherUserId), destinationOther, saved);
 
-    // (선택) 목록행 갱신
-    ChatRoomResponse myRow = chatService.getRoomRowFor(roomId, userId);
-    ChatRoomResponse otherRow = chatService.getRoomRowFor(roomId, otherUserId);
+    // 5) 방 목록 행 갱신(각자 관점: myUnreadCount 가 다름)
+    //    - 프런트가 목록을 따로 구독하고 있다면 유용 (/user/queue/rooms.list)
+    //    - 원치 않으면 이 블록은 제거해도 됨
+    ChatRoomResponse myRoomRow = chatService.getRoomRowFor(roomId, userId);
+    ChatRoomResponse otherRoomRow = chatService.getRoomRowFor(roomId, otherUserId);
 
-    broker.convertAndSendToUser(String.valueOf(userId), "/queue/rooms.list", myRow, headers.getMessageHeaders());
-    broker.convertAndSendToUser(String.valueOf(otherUserId), "/queue/rooms.list", otherRow, headers.getMessageHeaders());
-  }
-
-
-  /** Principal이 없으면 세션 속성에서 복구 */
-  private Long extractUserId(Principal principal, Message<?> message) {
-    if (principal instanceof WebSocketPrincipal wsp) return wsp.getUserId();
-    if (principal != null) {
-      try { return Long.valueOf(principal.getName()); } catch (Exception ignore) {}
-    }
-    var acc = org.springframework.messaging.simp.stomp.StompHeaderAccessor.wrap(message);
-    Map<String, Object> attrs = acc.getSessionAttributes();
-    if (attrs != null) {
-      Object v = attrs.get("userId");
-      if (v instanceof Long l) return l;
-      if (v instanceof Integer i) return i.longValue();
-      if (v instanceof String s) { try { return Long.parseLong(s); } catch (Exception ignore) {} }
-    }
-    throw new CustomException(ChatErrorCode.WEBSOCKET_UNAUTHORIZED);
+    broker.convertAndSendToUser(String.valueOf(userId),    "/queue/rooms.list", myRoomRow);
+    broker.convertAndSendToUser(String.valueOf(otherUserId), "/queue/rooms.list", otherRoomRow);
+    log.info("[WS] PUSH done dest={} myRowUnread={} otherRowUnread={}",
+        destinationMy, myRoomRow.getMyUnreadCount(), otherRoomRow.getMyUnreadCount());
   }
 
   /**
@@ -121,21 +95,21 @@ public class ChatWebSocketController {
    * - (선택) 상대에게 "읽음" 이벤트를 보내고 싶으면 개인 큐로 안내 가능
    */
   @MessageMapping("/rooms/{roomId}/read")
-  public void markRead(@DestinationVariable Long roomId, Principal principal, Message<?> message) {
-    Long userId = extractUserId(principal, message);
+  public void markRead(@DestinationVariable Long roomId, Principal principal) {
+    Long userId = Long.valueOf(principal.getName());
+
+    // 1) 내 unread= 0
     chatService.markAsRead(roomId, userId);
+
+    // 2) 목록 행(row) DTO를 "내 관점"으로 만들어서
     ChatRoomResponse myRow = chatService.getRoomRowFor(roomId, userId);
 
-    SimpMessageHeaderAccessor h = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
-    h.setLeaveMutable(true);
-    h.setContentType(org.springframework.util.MimeType.valueOf("application/json"));
+    // 3) 내 개인 큐로 푸시 → 리스트 화면이 구독 중이면 즉시 배지/미리보기 갱신
+    //    클라 구독 경로: /user/queue/rooms.list
+    broker.convertAndSendToUser(String.valueOf(userId), "/queue/rooms.list", myRow);
 
-    broker.convertAndSendToUser(String.valueOf(userId), "/queue/rooms.list", myRow, h.getMessageHeaders());
+
   }
 
 
-
 }
-
-
-
