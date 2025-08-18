@@ -51,6 +51,7 @@ public class ClubPostController {
   @GetMapping("/{clubId}")
   public ResponseEntity<BaseResponse<ClubPostDetailResponse>> getClubPostDetail(
       @AuthenticationPrincipal CustomUserDetails userDetails,
+      @PathVariable Long eventId,
       @PathVariable Long clubId) {
     ClubPostDetailResponse result = clubPostService.getClubPostDetail(userDetails.getUser().getId(),
         clubId);
@@ -61,6 +62,7 @@ public class ClubPostController {
   @PutMapping("/{clubId}")
   public ResponseEntity<BaseResponse<ClubPostDetailResponse>> updateClubPost(
       @AuthenticationPrincipal CustomUserDetails userDetails,
+      @PathVariable Long eventId,
       @PathVariable Long clubId,
       @RequestBody @Valid ClubPostRequest updateRequest) {
     ClubPostDetailResponse result = clubPostService.updateClubPost(userDetails.getUser().getId(),
@@ -72,6 +74,7 @@ public class ClubPostController {
   @DeleteMapping("/{clubId}")
   public ResponseEntity<BaseResponse<Void>> deleteClubPost(
       @AuthenticationPrincipal CustomUserDetails userDetails,
+      @PathVariable Long eventId,
       @PathVariable Long clubId) {
     clubPostService.deleteClubPost(userDetails.getUser().getId(), clubId);
     return ResponseEntity.ok(BaseResponse.success("소모임 게시글 삭제 성공", null));
