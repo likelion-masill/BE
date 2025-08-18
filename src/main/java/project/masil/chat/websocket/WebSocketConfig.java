@@ -1,12 +1,23 @@
 package project.masil.chat.websocket;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.converter.DefaultContentTypeResolver;
+import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.converter.MessageConverter;
+import org.springframework.messaging.converter.StringMessageConverter;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+
+import java.util.List;
 
 /**
  * [WebSocketConfig = 1:1 DM 전용 설정]
@@ -30,85 +41,51 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
  *    - SEND: '/app/chat/rooms/{roomId}/...' 전송 요청이면 방 참가자인지 확인
  */
 @Configuration
-@EnableWebSocketMessageBroker // STOMP 메시징 브로커(서버가 클라이언트에게 메시지를 배포하는 역할) 기능 활성화 (@MessageMapping 사용 가능)
+@EnableWebSocketMessageBroker
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
   private final StompAuthChannelInterceptor stompAuthChannelInterceptor;
 
-  /**
-   * [1] STOMP 엔드포인트 등록 (핸드셰이크 입구)
-   *
-   * - 클라이언트는 이 주소로 최초 연결을 시도합니다.
-   *   예) SockJS: new SockJS("/websocket/chat")
-   *
-   * - withSockJS():
-   *   브라우저가 순수 WebSocket을 지원하지 않아도,
-   *   폴백(롱폴링 등)으로 동작시키기 위해 SockJS를 허용합니다.
-   *
-   * - setAllowedOriginPatterns("*"):
-   *   CORS 허용. 운영에선 보안상 특정 도메인만 허용하도록 바꾸기
-   */
   @Override
   public void registerStompEndpoints(StompEndpointRegistry registry) {
-
-    // 1) 네이티브 WebSocket (테스트/도구용)
-    registry.addEndpoint("/ws")                    // ws://localhost:8080/ws
-        .setAllowedOriginPatterns("*");        // 운영은 도메인 제한 권장
-
-    // 2) SockJS (브라우저 폴백용: 실제 앱)
-    registry.addEndpoint("/websocket/chat")        // http://localhost:8080/websocket/chat
-        .setAllowedOriginPatterns("*")         // 운영은 도메인 제한 권장
-        .withSockJS();
+    registry.addEndpoint("/ws").setAllowedOriginPatterns("*");
+    registry.addEndpoint("/websocket/chat").setAllowedOriginPatterns("*").withSockJS();
   }
 
-  /**
-   * [2] 메시지 브로커 설정 (라우팅 규칙)
-   *
-   * ─ 클라 → 서버로 "보내는" 경로 접두사: /app/chat
-   *   - 클라는 "/app/chat/rooms/{roomId}/messages"로 SEND
-   *   - 서버는 @MessageMapping("/rooms/{roomId}/messages") 로 수신
-   *
-   * ─ 서버 → 클라로 "푸시"하는 경로:
-   *   - 1:1 전용이므로 브로드캐스트(/topic)는 제거하고,
-   *     개인 큐(/user/queue/**)만 쓴다.
-   *
-   *   - enableSimpleBroker("/queue"):
-   *     브로커가 관리하는 기본 목적지 접두사를 "/queue"로 선언.
-   *     convertAndSendToUser(..., "/queue/...", ...) 를 쓸 수 있게 해줌.
-   *
-   *   - setUserDestinationPrefix("/user"):
-   *     "개인 큐"를 구독할 때 클라는 "/user/..." 로 구독합니다.
-   *     예) 서버: convertAndSendToUser("42", "/queue/rooms.10", payload)
-   *         클라:  /user/queue/rooms.10  ← 요걸 구독
-   */
   @Override
   public void configureMessageBroker(MessageBrokerRegistry registry) {
-    // 1. 클라 → 서버 전송 prefix (서버의 @MessageMapping 과 연결됨)
     registry.setApplicationDestinationPrefixes("/app/chat");
-
-    // 2. 서버 -> 클라 푸시 경로 : 개인 큐만 사용 (브로드캐스트 /topic은 사용하지 않음)
     registry.enableSimpleBroker("/queue");
-
-    // 3. 사용자 개인 목적지 접두사
     registry.setUserDestinationPrefix("/user");
   }
 
-  /**
-   * [3] INBOUND 채널 인터셉터 적용
-   *
-   * - 클라가 보내는 모든 STOMP 프레임(연결/구독/전송)에 대해
-   *   stompAuthChannelInterceptor가 인증·권한을 검사합니다.
-   *
-   *   CONNECT  : 토큰에서 userId 추출 → 세션 Principal 저장
-   *   SUBSCRIBE: '/user/queue/rooms.{roomId}' 구독 요청 시 방 참가자만 허용
-   *   SEND     : '/app/chat/rooms/{roomId}/...' 전송 요청 시 방 참가자만 허용
-   */
+  // ★ STOMP로 들어오고 나가는 payload를 변환할 컨버터 등록
   @Override
-  public void configureClientInboundChannel(ChannelRegistration registration) {
-    registration.interceptors(stompAuthChannelInterceptor);
+  public boolean configureMessageConverters(List<MessageConverter> messageConverters) {
+    messageConverters.add(stompJacksonMessageConverter());
+    return false; // 기본 컨버터들도 유지
   }
 
+  @Bean
+  public MappingJackson2MessageConverter stompJacksonMessageConverter() {
+    MappingJackson2MessageConverter conv = new MappingJackson2MessageConverter();
+    conv.setObjectMapper(stompObjectMapper());
+    conv.setSerializedPayloadClass(String.class);
+    conv.setContentTypeResolver(msg -> MimeTypeUtils.APPLICATION_JSON);
+    return conv;
+  }
 
+  @Bean
+  public ObjectMapper stompObjectMapper() {
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new JavaTimeModule());
+    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    return mapper;
+  }
 
+  @Override
+  public void configureClientInboundChannel(org.springframework.messaging.simp.config.ChannelRegistration registration) {
+    registration.interceptors(stompAuthChannelInterceptor);
+  }
 }
