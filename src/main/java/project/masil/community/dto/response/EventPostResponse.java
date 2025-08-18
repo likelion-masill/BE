@@ -21,6 +21,9 @@ public class EventPostResponse {
   @Schema(description = "작성자 프로필 이미지", example = "https://my-e~~~~~vent01.jpg")
   private String userImage;
 
+  @Schema(description = "사장님 인증 여부", example = "true")
+  private boolean isBusinessVerified;
+
   @Schema(description = "이벤트 제목", example = "성북 청년의 날")
   private String title;
 
