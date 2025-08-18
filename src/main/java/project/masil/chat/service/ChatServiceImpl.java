@@ -301,53 +301,45 @@ public class ChatServiceImpl implements ChatService{
    */
   @Override
   public void markAsRead(Long roomId, Long userId) {
-    ChatRoom room = roomRepository.findById(roomId)
+    var room = roomRepository.findById(roomId)
         .orElseThrow(() -> new CustomException(ChatErrorCode.ROOM_NOT_FOUND));
-
     if (!room.hasParticipant(userId)) {
       throw new CustomException(ChatErrorCode.FORBIDDEN_ROOM_ACCESS);
     }
-
-    room.resetUnreadFor(userId); // 사용자가 채팅방을 열어 메시지를 읽었을 때, 본인의 안읽음 수를 0으로 초기화
-
+    room.resetUnreadFor(userId);
   }
 
   /**
-   * 내 채팅방 목록보기에서 한 줄(row) DTO를 사용자 관점으로 조회(unread/상대ID/최신메시지/최신메시지 시각 포함)
-   * @param roomId
-   * @param userId
-   * @return
-   */
-  @Override
-  public ChatRoomResponse getRoomRowFor(Long roomId, Long userId) {
-    ChatRoom room = roomRepository.findById(roomId)
-        .orElseThrow(() -> new CustomException(ChatErrorCode.ROOM_NOT_FOUND));
-
-    if (!room.hasParticipant(userId)) {
-      throw new CustomException(ChatErrorCode.FORBIDDEN_ROOM_ACCESS);
-    }
-
-    return converter.toRoomResponse(room, userId);
-  }
-
-  /**
-   * 1:1 방에서 내 상대 userId 반환 (권한 검증 포함)
-   * @param roomId
-   * @param userId
-   * @return
+   * [상대방 식별]
+   * - 1:1 방에서 'me'의 상대방 userId를 반환.
+   * - 내가 참가자가 아니거나 방이 없으면 예외.
    */
   @Override
   @Transactional(readOnly = true)
-  public Long getOtherParticipantId(Long roomId, Long userId) {
-    ChatRoom room = roomRepository.findById(roomId)
+  public Long getOtherParticipantId(Long roomId, Long me) {
+    var room = roomRepository.findById(roomId)
         .orElseThrow(() -> new CustomException(ChatErrorCode.ROOM_NOT_FOUND));
+    if (!room.hasParticipant(me)) {
+      throw new CustomException(ChatErrorCode.FORBIDDEN_ROOM_ACCESS);
+    }
+    // userAId/userBId 중 'me'가 아닌 쪽이 상대방
+    return room.getUserAId().equals(me) ? room.getUserBId() : room.getUserAId();
+  }
 
+  /**
+   * [방 목록 한 줄(내 관점)]
+   * - roomId 기준으로 'userId' 관점의 응답 DTO를 생성
+   * - targetUserId / myUnreadCount 가 "내 관점"으로 채워진다.
+   */
+  @Override
+  @Transactional(readOnly = true)
+  public ChatRoomResponse getRoomRowFor(Long roomId, Long userId) {
+    var room = roomRepository.findById(roomId)
+        .orElseThrow(() -> new CustomException(ChatErrorCode.ROOM_NOT_FOUND));
     if (!room.hasParticipant(userId)) {
       throw new CustomException(ChatErrorCode.FORBIDDEN_ROOM_ACCESS);
     }
-
-    // 내가 A면 B 반환, 내가 B면 A 반환
-    return room.getUserAId().equals(userId) ? room.getUserBId() : room.getUserAId();
+    return converter.toRoomResponse(room, userId);
   }
 
 

@@ -1,7 +1,6 @@
 package project.masil.chat.websocket;
 
 import java.security.Principal;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -12,10 +11,10 @@ import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 import project.masil.chat.exception.ChatErrorCode;
 import project.masil.chat.repository.ChatRoomRepository;
-import org.springframework.messaging.support.MessageBuilder;
 import project.masil.global.exception.CustomException;
 
 /**
@@ -37,86 +36,100 @@ import project.masil.global.exception.CustomException;
 @Slf4j
 public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
+  /** 방 참여자 여부를 검사하기 위해 DB에서 방을 조회 */
   private final ChatRoomRepository roomRepository;
+
+  /** STOMP 헤더(Authorization 등)에서 userId를 파싱하는 도우미*/
   private final WebSocketUserResolver webSocketUserResolver;
 
-  private static final Pattern APP_ROOMS_PATH = Pattern.compile("^/app/chat/rooms/(\\d+)/.*$");
-  private static final Pattern USER_QUEUE_ROOMS = Pattern.compile("^/user/queue/rooms\\.(\\d+)$");
-  private static final String USER_QUEUE_LIST = "/user/queue/rooms.list";
+  /**
+   * [구독 경로 정규식]  "/user/queue/rooms.{roomId}"
+   *  - 예) /user/queue/rooms.10  →  roomId=10
+   *  - 개인 큐만 사용하므로 topic 브로드캐스트는 필요 없음.
+   */
+  private static final Pattern USER_QUEUE_ROOMS = Pattern.compile(".*/queue/rooms\\.(\\d+)");
 
+  /**
+   * [전송 경로 정규식]  "/app/chat/rooms/{roomId}/..."
+   *  - 예) /app/chat/rooms/10/messages  →  roomId=10
+   *  - 클라이언트가 서버로 메시지를 보낼 때 사용하는 경로 패턴.
+   */
+  private static final Pattern APP_ROOMS_PATH   = Pattern.compile(".*/rooms/(\\d+)/.*");
+
+
+  /**
+   * INBOUND 프레임이 올 때마다 호출된다.
+   * 여기서 STOMP 헤더를 읽고, 프레임의 타입/명령에 따라 인증/권한을 검사한다.
+   * @param message
+   * @param channel
+   * @return
+   */
   @Override
   public Message<?> preSend(Message<?> message, MessageChannel channel) {
+    //STOMP 헤더에 접근하기 위한 래퍼
     StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
-    StompCommand cmd = accessor.getCommand();
 
-    // CONNECT: 토큰 -> Principal 세팅
-    if (accessor.getMessageType() == SimpMessageType.CONNECT || StompCommand.CONNECT.equals(cmd)) {
-      Long userId = webSocketUserResolver.resolve(accessor);
-      accessor.setUser(new WebSocketPrincipal(userId));
-      Map<String, Object> session = accessor.getSessionAttributes();
-      if (session != null) session.put("userId", userId);
-      log.info("[WS] CONNECT userId={}", userId);
+    // 1) CONNECT 단계: 최초 핸드셰이크 완료 후 STOMP CONNECT 프레임이 들어온다.
+    //    - 이때 토큰을 파싱해서 userId를 구하고, 세션 Principal 로 심어둔다.
+    //    - 이후 프레임에서는 accessor.getUser() 로 userId 에 접근할 수 있다.
+    //    - SimpMessageType.CONNECT 와 StompCommand.CONNECT 둘 다 체크하는 이유:
+    //      구현체/상황에 따라 타입/커맨드로 구분되는 경우가 있기 때문(안전하게 모두 허용).
+    if (accessor.getMessageType() == SimpMessageType.CONNECT || StompCommand.CONNECT.equals(accessor.getCommand())) {
+      Long userId = webSocketUserResolver.resolve(accessor);     // 예: Authorization / X-User-Id 헤더에서 파싱
+      accessor.setUser(new WebSocketPrincipal(userId));          // Principal.name = "userId" 로 저장
+      // ✅ 세션에도 보관 (SockJS에서 프레임 간 유실 대비)
+      if (accessor.getSessionAttributes() != null) {
+        accessor.getSessionAttributes().put("userId", userId);
+      }
+      // 헤더 변경사항을 다음 프레임에서도 보존
       accessor.setLeaveMutable(true);
-      return message;
+      return MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());                         // CONNECT는 여기서 종료(권한 체크 대상 아님)
     }
 
-    // 이후 프레임은 인증 필수
-    Long userId = resolveUserId(accessor);
-    if (accessor.getUser() == null) accessor.setUser(new WebSocketPrincipal(userId));
-
-    if (StompCommand.SUBSCRIBE.equals(cmd)) {
-      log.info("[WS] SUBSCRIBE userId={} dest={}", userId, accessor.getDestination());
-      String dest = accessor.getDestination();
-      if (dest == null) throw new CustomException(ChatErrorCode.SUBSCRIPTION_FORBIDDEN);
-
-      if (USER_QUEUE_LIST.equals(dest)) { accessor.setLeaveMutable(true); return message; }
-
-      Long roomId = extract(dest, USER_QUEUE_ROOMS);
-      if (roomId == null || !isParticipant(roomId, userId))
-        throw new CustomException(ChatErrorCode.SUBSCRIPTION_FORBIDDEN);
-
-      accessor.setLeaveMutable(true);
-      return message;
+    // [2] 이후 프레임: Principal 확보 (없으면 세션에서 복구 시도)
+    Principal principal = accessor.getUser();
+    if (principal == null) {
+      Object uidObj = accessor.getSessionAttributes() != null
+          ? accessor.getSessionAttributes().get("userId") : null;
+      if (uidObj != null) {
+        Long restored = (uidObj instanceof Long) ? (Long) uidObj : Long.valueOf(uidObj.toString());
+        accessor.setUser(new WebSocketPrincipal(restored));
+        accessor.setLeaveMutable(true);
+        return MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());
+      }
+      throw new CustomException(ChatErrorCode.WEBSOCKET_UNAUTHORIZED);
     }
 
-    if (StompCommand.SEND.equals(cmd)) {
-      String dest = accessor.getDestination();
-      String payload = safeBody(message.getPayload());
-      log.info("[WS] SEND userId={} dest={} payload={}", userId, dest, payload);
 
-      if (dest == null) throw new CustomException(ChatErrorCode.FORBIDDEN_ROOM_ACCESS);
-      Long roomId = extract(dest, APP_ROOMS_PATH);
-      if (roomId == null || !isParticipant(roomId, userId))
-        throw new CustomException(ChatErrorCode.FORBIDDEN_ROOM_ACCESS);
+    // Principal.name 에는 문자열 형태의 userId를 넣어두었음
+    Long userId = Long.valueOf(principal.getName());
 
-      accessor.setLeaveMutable(true);
-      return message;
+    // 3) SUBSCRIBE 권한 체크
+    //    - 구독 대상이 "/user/queue/rooms.{roomId}"라면,
+    //      해당 roomId의 "참여자"만 구독을 허용한다.
+    //    - 개인 큐는 원칙적으로 타인이 수신 못하지만(서버가 보내주지 않음),
+    //      형식상/보안상 구독 자체를 제한하는 편이 더 안전하다.
+    if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+      log.info("[INTCPT] SUBSCRIBE user={} dest={}", accessor.getUser(), accessor.getDestination());
+      Long roomId = extract(accessor.getDestination(), USER_QUEUE_ROOMS); // 경로에서 roomId 뽑기
+      if (roomId != null && !isParticipant(roomId, userId)) {
+        throw new CustomException(ChatErrorCode.SUBSCRIPTION_FORBIDDEN); // 방 참가자 아님 → 구독 금지
+      }
     }
 
-    accessor.setLeaveMutable(true);
+    // 4) SEND 권한 체크
+    //    - 전송 대상이 "/app/chat/rooms/{roomId}/..." 라면,
+    //      해당 roomId의 "참여자"만 메시지 전송을 허용한다.
+    if (StompCommand.SEND.equals(accessor.getCommand())) {
+      log.info("[INTCPT] SEND user={} dest={}", accessor.getUser(), accessor.getDestination());
+      Long roomId = extract(accessor.getDestination(), APP_ROOMS_PATH); // 경로에서 roomId 뽑기
+      if (roomId != null && !isParticipant(roomId, userId)) {
+        throw new CustomException(ChatErrorCode.FORBIDDEN_ROOM_ACCESS); // 방 참가자 아님 → 전송 금지
+      }
+    }
+
+    // 5) 나머지 프레임(예: DISCONNECT)은 별도 로직 없이 통과
     return message;
-  }
-
-  private String safeBody(Object p) {
-    try {
-      if (p instanceof byte[] b) return new String(b);
-      return String.valueOf(p);
-    } catch (Exception e) { return "<unreadable>"; }
-  }
-
-  private Long resolveUserId(StompHeaderAccessor accessor) {
-    Principal p = accessor.getUser();
-    if (p != null) {
-      try { return Long.valueOf(p.getName()); } catch (Exception ignore) {}
-    }
-    Map<String, Object> session = accessor.getSessionAttributes();
-    if (session != null) {
-      Object v = session.get("userId");
-      if (v instanceof Long l) return l;
-      if (v instanceof Integer i) return i.longValue();
-      if (v instanceof String s) try { return Long.parseLong(s); } catch (Exception ignore) {}
-    }
-    throw new CustomException(ChatErrorCode.WEBSOCKET_UNAUTHORIZED);
   }
 
   /**
@@ -126,8 +139,8 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
    */
   private boolean isParticipant(Long roomId, Long userId) {
     return roomRepository.findById(roomId)
-            .map(r -> r.hasParticipant(userId))
-            .orElse(false);
+        .map(r -> r.hasParticipant(userId))
+        .orElse(false);
   }
 
   /**
@@ -140,7 +153,8 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
   private Long extract(String destination, Pattern pattern) {
     if (destination == null) return null;
     Matcher m = pattern.matcher(destination);
-    return m.matches() ? Long.valueOf(m.group(1)) : null;
+    return m.matches() ? Long.valueOf(m.group(1)) : null; //그룹 1번이 roomId
   }
+
 
 }
