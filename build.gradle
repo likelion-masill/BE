@@ -52,6 +52,10 @@ dependencies {
     // WebSocket 설정
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
+    // WebSocket 설정 - JavaTimeModule
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+
+
 }
 
 tasks.named('test') {

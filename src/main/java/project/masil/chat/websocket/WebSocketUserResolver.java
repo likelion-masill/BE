@@ -38,34 +38,32 @@ public class WebSocketUserResolver {
   private final UserRepository userRepository;
 
   public Long resolve(StompHeaderAccessor accessor) {
-    // 1) CONNECT 프레임의 STOMP 헤더에서 Authorization 헤더 추출
-    //    예: "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    // 1) Authorization 헤더 추출
     String auth = accessor.getFirstNativeHeader("Authorization");
     if (auth == null || !auth.toLowerCase().startsWith("bearer ")) {
       throw new CustomException(ChatErrorCode.WEBSOCKET_UNAUTHORIZED);
     }
 
-    // 2) "Bearer <token>" 포맷 파싱
+    // 2) Bearer 토큰 파싱
     Matcher m = BEARER.matcher(auth.trim());
     if (!m.find()) {
       throw new CustomException(ChatErrorCode.WEBSOCKET_UNAUTHORIZED);
     }
     String token = m.group(1).trim();
 
-    // 3) 토큰 유효성 검증(만료/서명/형식 등)
-    jwtProvider.validateToken(token); // 내부에서 예외 던지면 인터셉터가 401 처리
+    // 3) 토큰 유효성 검증
+    jwtProvider.validateToken(token);
 
-    // 4) 토큰에서 이메일 추출
+    // 4) 이메일 추출
     String email = jwtProvider.extractEmail(token);
     if (email == null || email.isBlank()) {
       throw new CustomException(ChatErrorCode.WEBSOCKET_UNAUTHORIZED);
     }
 
-    // 5) 이메일로 사용자 조회 -> userId 반환
+    // 5) 사용자 조회
     User user = userRepository.findByEmail(email)
-        .orElseThrow(() -> new CustomException(ChatErrorCode.WEBSOCKET_UNAUTHORIZED));
+            .orElseThrow(() -> new CustomException(ChatErrorCode.WEBSOCKET_UNAUTHORIZED));
 
     return user.getId();
   }
-
 }
