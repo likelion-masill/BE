@@ -10,7 +10,7 @@ public class CommentConverter {
         .commentId(comment.getId())
         .content(comment.getContent())
         .username(comment.getUser().getUsername())
-        .userProfileImageUrl(comment.getUser().getProfileImageUrl())
+        .userProfileImageUrl(comment.getUser().getProfileImageUrlOrDefault())
         .createdAt(comment.getCreatedAt())
         .replyCommentCount(comment.getReplies().size())
         .build();

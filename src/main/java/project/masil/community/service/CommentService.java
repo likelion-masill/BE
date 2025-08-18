@@ -71,6 +71,7 @@ public class CommentService {
         .user(user)
         .content(content)
         .build();
+    post.incrementCommentCount();
     Comment saved = commentRepository.save(comment);
 
     return CommentConverter.toCommentResponse(saved);
@@ -133,6 +134,7 @@ public class CommentService {
         .user(user)
         .content(content)
         .build();
+    post.incrementCommentCount();
 
     Comment savedChildComment = commentRepository.save(childComment);
 

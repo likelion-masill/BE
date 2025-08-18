@@ -14,8 +14,17 @@ public class ClubPostSummaryResponse {
   @Schema(description = "소모임 ID", example = "3")
   private Long clubId;
 
+  @Schema(description = "작성자 이름", example = "성북구 청년봉사자")
+  private String username;
+
+  @Schema(description = "작성자 프로필 이미지 URL", example = "https://my-event01.jpg")
+  private String userImage;
+
   @Schema(description = "소모임 게시글 제목", example = "성북 청년의 날 행사 소모임")
   private String title;
+
+  @Schema(description = "게시글 내용", example = "ENFP 환영!!\n심심하신분 편하게 오셔서 같이 행사 즐겨요~")
+  private String content;
 
   @Schema(description = "소모임 장소", example = "서울특별시 성북구 서경로 124")
   private String location;
@@ -35,6 +44,9 @@ public class ClubPostSummaryResponse {
 
   @Schema(description = "게시글 생성 시간", example = "2025-08-01T10:00:00")
   private LocalDateTime createdAt;
+
+  @Schema(description = "좋아요 여부")
+  private boolean isLiked;
 
 
 }

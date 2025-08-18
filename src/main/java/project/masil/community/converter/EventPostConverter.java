@@ -29,7 +29,7 @@ public class EventPostConverter {
                     .build()
                 )
                 .toList()
-        ).userImage(eventPost.getUser().getProfileImageUrl())
+        ).userImage(eventPost.getUser().getProfileImageUrlOrDefault())
         .createdAt(eventPost.getCreatedAt())
         .viewCount(eventPost.getViewCount())
         .favoriteCount(eventPost.getFavoriteCount())

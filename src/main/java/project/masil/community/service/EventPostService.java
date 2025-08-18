@@ -1,12 +1,12 @@
 package project.masil.community.service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,12 +29,16 @@ import project.masil.global.config.S3.AmazonS3Manager;
 import project.masil.global.config.S3.Uuid;
 import project.masil.global.config.S3.UuidRepository;
 import project.masil.global.exception.CustomException;
+import project.masil.infrastructure.client.ai.AiClient;
+import project.masil.infrastructure.client.ai.dto.AiSummarizeRequest;
+import project.masil.infrastructure.client.ai.dto.AiSummarizeResponse;
 import project.masil.user.entity.User;
 import project.masil.user.exception.UserErrorCode;
 import project.masil.user.repository.UserRepository;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EventPostService {
 
   private final EventPostRepository eventPostRepository;
@@ -50,10 +54,12 @@ public class EventPostService {
   private final AmazonS3Manager s3Manager;
   private final FavoriteRepository favoriteRepository;
 
+  private final AiClient aiClient;
+
   /**
-   * 이벤트 작성자 userId를 반환
-   * - 채팅 서비스에서 "이벤트 컨텍스트로 채팅 시작" 시 대상 사용자 검증 용도
-   * - 존재하지 않으면 예외 (PostErrorCode.POST_NOT_FOUND)
+   * 이벤트 작성자 userId를 반환 - 채팅 서비스에서 "이벤트 컨텍스트로 채팅 시작" 시 대상 사용자 검증 용도 - 존재하지 않으면 예외
+   * (PostErrorCode.POST_NOT_FOUND)
+   *
    * @param eventId
    * @return
    */
@@ -107,6 +113,29 @@ public class EventPostService {
         })
         .collect(Collectors.toList());
 
+    String summary = null;
+    try {
+      AiSummarizeRequest aiReq =
+          new AiSummarizeRequest(
+              request.getContent(),   // 원문
+              5,                      // top_k
+              10,                     // min_len
+              0.3,                    // temperature
+              300                     // max_output_tokens
+          );
+
+      AiSummarizeResponse response = aiClient.summarize(aiReq);
+
+      if (response != null && "success".equalsIgnoreCase(response.getStatus())
+          && response.getData() != null) {
+        String data = response.getData().trim();
+        summary = data;
+      }
+    } catch (Exception e) {
+      // 요약 실패는 전체 트랜잭션 실패로 볼 필요 없으면 여기서만 로깅하고 넘어가
+      log.warn("요약 생성 실패", e);
+    }
+
     EventPost eventPost = EventPost.builder()
         .postType(PostType.EVENT)
         .user(user)
@@ -118,7 +147,7 @@ public class EventPostService {
         .content(request.getContent())
         .startAt(request.getStartAt())
         .endAt(request.getEndAt())
-        .summary(null)
+        .summary(summary)
         .viewCount(0) //생성할때 0
         .favoriteCount(0)
         .commentCount(0)
@@ -161,7 +190,8 @@ public class EventPostService {
    */
   @Transactional(readOnly = true)
   public Page<EventPostResponse> getEventAll(Long regionId, Pageable pageable, Long userId) {
-    Page<EventPost> page = eventPostRepository.findAllByRegionIdOrderByCreatedAtDesc(regionId, pageable);
+    Page<EventPost> page = eventPostRepository.findAllByRegionIdOrderByCreatedAtDesc(regionId,
+        pageable);
 
     // 1) 비로그인(=userId 없음)이라면 isLiked는 전부 false로 내려보냄
     if (userId == null) {
@@ -180,14 +210,17 @@ public class EventPostService {
 
   /**
    * 지역ID + 이벤트 타입으로 이벤트 게시글 리스트 조회 + 로그인한 사용자가 좋아요 눌렀는지까지 한 번에 계산
+   *
    * @param regionId
    * @param eventType
    * @param pageable
    * @return
    */
   @Transactional(readOnly = true)
-  public Page<EventPostResponse> getEventTypeList(Long regionId, EventType eventType, Pageable pageable, Long userId) {
-    Page<EventPost> page = eventPostRepository.findByRegionIdAndEventType(regionId, eventType, pageable);
+  public Page<EventPostResponse> getEventTypeList(Long regionId, EventType eventType,
+      Pageable pageable, Long userId) {
+    Page<EventPost> page = eventPostRepository.findByRegionIdAndEventType(regionId, eventType,
+        pageable);
 
     // 1) 비로그인(=userId 없음)이라면 isLiked는 전부 false로 내려보냄
     if (userId == null) {

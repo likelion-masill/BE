@@ -50,8 +50,11 @@ public class ClubPostController {
   @Operation(summary = "소모임 게시글 상세 조회", description = "소모임 게시글의 상세 정보를 조회합니다.")
   @GetMapping("/{clubId}")
   public ResponseEntity<BaseResponse<ClubPostDetailResponse>> getClubPostDetail(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @PathVariable Long eventId,
       @PathVariable Long clubId) {
-    ClubPostDetailResponse result = clubPostService.getClubPostDetail(clubId);
+    ClubPostDetailResponse result = clubPostService.getClubPostDetail(userDetails.getUser().getId(),
+        clubId);
     return ResponseEntity.ok(BaseResponse.success("소모임 게시글 생성 성공", result));
   }
 
@@ -59,6 +62,7 @@ public class ClubPostController {
   @PutMapping("/{clubId}")
   public ResponseEntity<BaseResponse<ClubPostDetailResponse>> updateClubPost(
       @AuthenticationPrincipal CustomUserDetails userDetails,
+      @PathVariable Long eventId,
       @PathVariable Long clubId,
       @RequestBody @Valid ClubPostRequest updateRequest) {
     ClubPostDetailResponse result = clubPostService.updateClubPost(userDetails.getUser().getId(),
@@ -70,6 +74,7 @@ public class ClubPostController {
   @DeleteMapping("/{clubId}")
   public ResponseEntity<BaseResponse<Void>> deleteClubPost(
       @AuthenticationPrincipal CustomUserDetails userDetails,
+      @PathVariable Long eventId,
       @PathVariable Long clubId) {
     clubPostService.deleteClubPost(userDetails.getUser().getId(), clubId);
     return ResponseEntity.ok(BaseResponse.success("소모임 게시글 삭제 성공", null));
@@ -79,6 +84,7 @@ public class ClubPostController {
       description = "특정 이벤트에 대한 소모임 게시글 목록을 조회합니다.")
   @GetMapping("/all")
   public ResponseEntity<BaseResponse<Page<ClubPostSummaryResponse>>> getClubPostListByEventId(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
       @PathVariable Long eventId,
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int size,
@@ -88,7 +94,9 @@ public class ClubPostController {
     Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
     Pageable pageable = PageRequest.of(pageIndex, size, sort);
 
-    Page<ClubPostSummaryResponse> result = clubPostService.getClubPostListByEventId(eventId,
+    Page<ClubPostSummaryResponse> result = clubPostService.getClubPostListByEventId(
+        userDetails.getUser().getId(),
+        eventId,
         pageable);
     return ResponseEntity.ok(BaseResponse.success("소모임 게시글 목록 조회 성공", result));
   }
