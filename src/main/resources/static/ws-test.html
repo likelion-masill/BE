@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>WebSocket 1:1 Chat Test</title>
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <style>
+    body{font-family:sans-serif;margin:16px}
+    #log{height:380px;border:1px solid #ccc;padding:8px;overflow:auto;white-space:pre-wrap}
+    input[type=text]{width:480px}
+  </style>
+</head>
+<body>
+<h2>WebSocket 1:1 Chat Test</h2>
+
+<label>JWT Access Token:</label><br/>
+<input id="token" type="text" placeholder="여기에 액세스 토큰만 붙여넣기"/>
+<br/><br/>
+
+<label>Room ID:</label>
+<input id="room" type="number" value="1" style="width:80px"/>
+<button id="btnConnect">Connect & Subscribe</button>
+<button id="btnDisconnect">Disconnect</button>
+
+<br/><br/>
+<input id="content" type="text" placeholder="message content"/>
+<button id="btnSend">Send</button>
+<button id="btnRead">Mark Read</button>
+
+<h3>Log</h3>
+<div id="log"></div>
+
+<script>
+  let stompClient = null;
+  let subsRoom = null, subsList = null;
+  const log = (m) => { const el = document.getElementById('log'); el.textContent += m + "\n"; el.scrollTop = el.scrollHeight; };
+
+  function connect() {
+    const token = document.getElementById('token').value.trim();
+    const roomId = document.getElementById('room').value.trim();
+    if (!token) { alert('토큰을 입력하세요'); return; }
+
+    // SockJS + STOMP
+    const sock = new SockJS('/api/websocket/chat');
+    stompClient = Stomp.over(sock);
+    stompClient.debug = (s) => log(s);
+
+    stompClient.connect(
+        { Authorization: 'Bearer ' + token }, // ← 토큰 자동 첨부
+        () => {
+          log('CONNECTED');
+          // 내 개인 큐 구독 (방 메시지)
+          subsRoom = stompClient.subscribe('/user/queue/rooms.' + roomId, (msg) => {
+            log('ROOM MSG: ' + msg.body);
+          });
+          // (선택) 목록 갱신 큐 구독
+          subsList = stompClient.subscribe('/user/queue/rooms.list', (msg) => {
+            log('LIST ROW: ' + msg.body);
+          });
+        },
+        (err) => {
+          log('STOMP ERROR: ' + JSON.stringify(err));
+        }
+    );
+
+    // 웹소켓 닫힘/오류도 로그
+    sock.onclose = (e) => log('SOCKET CLOSED code=' + e.code + ' reason=' + (e.reason || ''));
+    sock.onerror = (e) => log('SOCKET ERROR ' + e);
+  }
+
+  function disconnect() {
+    if (subsRoom) subsRoom.unsubscribe();
+    if (subsList) subsList.unsubscribe();
+    if (stompClient) stompClient.disconnect(() => log('DISCONNECTED'));
+  }
+
+  function sendMsg() {
+    const roomId = document.getElementById('room').value.trim();
+    const content = document.getElementById('content').value;
+    stompClient.send('/app/chat/rooms/' + roomId + '/messages', {}, JSON.stringify({ content }));
+    document.getElementById('content').value = '';
+  }
+
+  function markRead() {
+    const roomId = document.getElementById('room').value.trim();
+    stompClient.send('/app/chat/rooms/' + roomId + '/read', {}, '{}');
+  }
+
+  document.getElementById('btnConnect').onclick = connect;
+  document.getElementById('btnDisconnect').onclick = disconnect;
+  document.getElementById('btnSend').onclick = sendMsg;
+  document.getElementById('btnRead').onclick = markRead;
+</script>
+</body>
+</html>

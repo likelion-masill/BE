@@ -50,6 +50,13 @@ public class SecurityConfig {
                     .requestMatchers("/users/sign-up", "/auth/login", "/users/nickname/check")
                     .permitAll()
 
+                    // WebSocket/SockJS 핸드셰이크 & 내부 전송 경로 전부 허용
+                    // context-path(/api) 붙이지 않습니다!
+                    .requestMatchers("/websocket/**", "/ws/**").permitAll()
+
+                    // 테스트 페이지(정적) 허용 (정적 리소스도 context-path 제거)
+                    .requestMatchers("/ws-test.html").permitAll()
+
                     // EventPost 조회 관련 API 인증 허용
                     .requestMatchers(HttpMethod.GET, "/events/*")
                     .permitAll()
