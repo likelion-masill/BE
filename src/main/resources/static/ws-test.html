@@ -6,9 +6,9 @@
   <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
   <style>
-    body{font-family:sans-serif;margin:16px}
-    #log{height:380px;border:1px solid #ccc;padding:8px;overflow:auto;white-space:pre-wrap}
-    input[type=text]{width:480px}
+    body { font-family: sans-serif; margin: 16px; }
+    #log { height: 380px; border: 1px solid #ccc; padding: 8px; overflow: auto; white-space: pre-wrap; }
+    input[type=text] { width: 480px; }
   </style>
 </head>
 <body>
@@ -34,7 +34,11 @@
 <script>
   let stompClient = null;
   let subsRoom = null, subsList = null;
-  const log = (m) => { const el = document.getElementById('log'); el.textContent += m + "\n"; el.scrollTop = el.scrollHeight; };
+  const log = (m) => {
+    const el = document.getElementById('log');
+    el.textContent += m + "\n";
+    el.scrollTop = el.scrollHeight;
+  };
 
   function connect() {
     const token = document.getElementById('token').value.trim();
@@ -47,21 +51,21 @@
     stompClient.debug = (s) => log(s);
 
     stompClient.connect(
-        { Authorization: 'Bearer ' + token }, // ← 토큰 자동 첨부
-        () => {
-          log('CONNECTED');
-          // 내 개인 큐 구독 (방 메시지)
-          subsRoom = stompClient.subscribe('/user/queue/rooms.' + roomId, (msg) => {
-            log('ROOM MSG: ' + msg.body);
-          });
-          // (선택) 목록 갱신 큐 구독
-          subsList = stompClient.subscribe('/user/queue/rooms.list', (msg) => {
-            log('LIST ROW: ' + msg.body);
-          });
-        },
-        (err) => {
-          log('STOMP ERROR: ' + JSON.stringify(err));
-        }
+            { Authorization: 'Bearer ' + token }, // 토큰 첨부
+            () => {
+              log('CONNECTED');
+              // 내 개인 큐 구독 (방 메시지)
+              subsRoom = stompClient.subscribe('/user/queue/rooms.' + roomId, (msg) => {
+                log('ROOM MSG: ' + msg.body);
+              });
+              // (선택) 목록 갱신 큐 구독
+              subsList = stompClient.subscribe('/user/queue/rooms.list', (msg) => {
+                log('LIST ROW: ' + msg.body);
+              });
+            },
+            (err) => {
+              log('STOMP ERROR: ' + JSON.stringify(err));
+            }
     );
 
     // 웹소켓 닫힘/오류도 로그
