@@ -19,7 +19,7 @@ public class CorsConfig {
     CorsConfiguration configuration = new CorsConfiguration();
 
     // 환경 변수에 정의된 출처만 허용
-    configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
+    configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins));
     // 리스트에 작성한 HTTP 메소드 요청만 허용
     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH"));
     // 리스트에 작성한 헤더들이 포함된 요청만 허용

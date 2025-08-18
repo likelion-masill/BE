@@ -2,6 +2,7 @@ package project.masil.chat.controller;
 
 import java.security.Principal;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.stereotype.Controller;
 import project.masil.chat.dto.request.SendMessageRequest;
@@ -29,6 +30,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
  */
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 public class ChatWebSocketController {
 
   private final ChatService chatService; // 채팅 서비스 비즈니스 로직
@@ -54,6 +56,8 @@ public class ChatWebSocketController {
   ) {
     // 1) STOMP 세션에서 userId 꺼내기
     Long userId = Long.valueOf(principal.getName()); //보내는 사람 userId
+    log.info("[WS] IN rooms/{}/messages by user={} payload={}", roomId, userId, payload);
+
 
     // 2) 저장/캐시/unread 반영
     ChatMessageResponse saved = chatService.sendMessage(roomId, userId, payload);
@@ -66,6 +70,9 @@ public class ChatWebSocketController {
     String destinationMy = "/queue/rooms." + roomId;
     String destinationOther = "/queue/rooms." + roomId;
 
+    log.info("[WS] PUSH start dest={} my={} other={} body={}",
+        destinationMy, userId, otherUserId, saved);
+
     broker.convertAndSendToUser(String.valueOf(userId), destinationMy, saved);
     broker.convertAndSendToUser(String.valueOf(otherUserId), destinationOther, saved);
 
@@ -77,6 +84,8 @@ public class ChatWebSocketController {
 
     broker.convertAndSendToUser(String.valueOf(userId),    "/queue/rooms.list", myRoomRow);
     broker.convertAndSendToUser(String.valueOf(otherUserId), "/queue/rooms.list", otherRoomRow);
+    log.info("[WS] PUSH done dest={} myRowUnread={} otherRowUnread={}",
+        destinationMy, myRoomRow.getMyUnreadCount(), otherRoomRow.getMyUnreadCount());
   }
 
   /**

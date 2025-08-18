@@ -4,8 +4,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import project.masil.community.enums.EventType;
 
@@ -13,6 +15,8 @@ import project.masil.community.enums.EventType;
 @Setter
 @Builder
 @Schema(title = "EventPostRequest : 이벤트 요청 DTO")
+@NoArgsConstructor
+@AllArgsConstructor
 public class EventPostRequest {
 
   @NotBlank(message = "지역아이디는 필수입니다.")

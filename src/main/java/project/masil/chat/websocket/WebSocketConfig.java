@@ -35,6 +35,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
   private final StompAuthChannelInterceptor stompAuthChannelInterceptor;
+  private final JwtHandshakeHandler jwtHandshakeHandler;
 
   /**
    * [1] STOMP 엔드포인트 등록 (핸드셰이크 입구)
@@ -51,14 +52,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
    */
   @Override
   public void registerStompEndpoints(StompEndpointRegistry registry) {
-
-    // 1) 네이티브 WebSocket (테스트/도구용)
-    registry.addEndpoint("/ws")                    // ws://localhost:8080/ws
-        .setAllowedOriginPatterns("*");        // 운영은 도메인 제한 권장
-
-    // 2) SockJS (브라우저 폴백용: 실제 앱)
-    registry.addEndpoint("/websocket/chat")        // http://localhost:8080/websocket/chat
-        .setAllowedOriginPatterns("*")         // 운영은 도메인 제한 권장
+    registry.addEndpoint("/websocket/chat")
+        .setHandshakeHandler(jwtHandshakeHandler) // ★ 추가
+        // ✅ credentials 허용 시 "*" 금지 → 명시적으로 허용 오리진 나열
+        .setAllowedOriginPatterns(
+            "http://localhost:5173"
+            // 운영 도메인도 필요 시 추가: "https://your-domain.com"
+        )
         .withSockJS();
   }
 

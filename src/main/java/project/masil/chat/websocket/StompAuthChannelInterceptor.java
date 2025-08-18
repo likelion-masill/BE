@@ -11,6 +11,7 @@ import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 import project.masil.chat.exception.ChatErrorCode;
 import project.masil.chat.repository.ChatRoomRepository;
@@ -73,19 +74,29 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     //    - 이후 프레임에서는 accessor.getUser() 로 userId 에 접근할 수 있다.
     //    - SimpMessageType.CONNECT 와 StompCommand.CONNECT 둘 다 체크하는 이유:
     //      구현체/상황에 따라 타입/커맨드로 구분되는 경우가 있기 때문(안전하게 모두 허용).
-    if (accessor.getMessageType() == SimpMessageType.CONNECT || StompCommand.CONNECT.equals(
-        accessor.getCommand())) {
-      Long userId = webSocketUserResolver.resolve(
-          accessor);     // 예: Authorization / X-User-Id 헤더에서 파싱
+    if (accessor.getMessageType() == SimpMessageType.CONNECT || StompCommand.CONNECT.equals(accessor.getCommand())) {
+      Long userId = webSocketUserResolver.resolve(accessor);     // 예: Authorization / X-User-Id 헤더에서 파싱
       accessor.setUser(new WebSocketPrincipal(userId));          // Principal.name = "userId" 로 저장
-      log.info("[WS] CONNECT userId={}", userId);
-      return message;                              // CONNECT는 여기서 종료(권한 체크 대상 아님)
+      // ✅ 세션에도 보관 (SockJS에서 프레임 간 유실 대비)
+      if (accessor.getSessionAttributes() != null) {
+        accessor.getSessionAttributes().put("userId", userId);
+      }
+      // 헤더 변경사항을 다음 프레임에서도 보존
+      accessor.setLeaveMutable(true);
+      return MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());                         // CONNECT는 여기서 종료(권한 체크 대상 아님)
     }
 
-    // 2) CONNECT 이후의 모든 프레임(SUBSCRIBE / SEND 등)은 반드시 Principal 이 있어야 한다.
-    //    - 세션에 사용자 정보가 없다면 인증 실패로 간주.
+    // [2] 이후 프레임: Principal 확보 (없으면 세션에서 복구 시도)
     Principal principal = accessor.getUser();
     if (principal == null) {
+      Object uidObj = accessor.getSessionAttributes() != null
+          ? accessor.getSessionAttributes().get("userId") : null;
+      if (uidObj != null) {
+        Long restored = (uidObj instanceof Long) ? (Long) uidObj : Long.valueOf(uidObj.toString());
+        accessor.setUser(new WebSocketPrincipal(restored));
+        accessor.setLeaveMutable(true);
+        return MessageBuilder.createMessage(message.getPayload(), accessor.getMessageHeaders());
+      }
       throw new CustomException(ChatErrorCode.WEBSOCKET_UNAUTHORIZED);
     }
 
@@ -99,10 +110,9 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     //    - 개인 큐는 원칙적으로 타인이 수신 못하지만(서버가 보내주지 않음),
     //      형식상/보안상 구독 자체를 제한하는 편이 더 안전하다.
     if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
-      log.debug("SUBSCRIBE dest={}, userId={}", accessor.getDestination(), userId);
+      log.info("[INTCPT] SUBSCRIBE user={} dest={}", accessor.getUser(), accessor.getDestination());
       Long roomId = extract(accessor.getDestination(), USER_QUEUE_ROOMS); // 경로에서 roomId 뽑기
       if (roomId != null && !isParticipant(roomId, userId)) {
-        //roomId == null이면 우리 패턴(/user/queue/rooms.{roomId})이 아닌 다른 구독이거나 잘못된 경로라서 권한체크 자체를 스킵해야 함.
         throw new CustomException(ChatErrorCode.SUBSCRIPTION_FORBIDDEN); // 방 참가자 아님 → 구독 금지
       }
     }
@@ -111,7 +121,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     //    - 전송 대상이 "/app/chat/rooms/{roomId}/..." 라면,
     //      해당 roomId의 "참여자"만 메시지 전송을 허용한다.
     if (StompCommand.SEND.equals(accessor.getCommand())) {
-      log.debug("SUBSCRIBE dest={}, userId={}", accessor.getDestination(), userId);
+      log.info("[INTCPT] SEND user={} dest={}", accessor.getUser(), accessor.getDestination());
       Long roomId = extract(accessor.getDestination(), APP_ROOMS_PATH); // 경로에서 roomId 뽑기
       if (roomId != null && !isParticipant(roomId, userId)) {
         throw new CustomException(ChatErrorCode.FORBIDDEN_ROOM_ACCESS); // 방 참가자 아님 → 전송 금지
