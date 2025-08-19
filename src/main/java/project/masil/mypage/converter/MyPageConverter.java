@@ -47,12 +47,12 @@ public class MyPageConverter {
     return PostResponse.builder()
         .postId(post.getId())
         .postType(post.getPostType())
-        .images(IntStream.range(0, images.size())
-            .mapToObj(i -> EventImageResponse.builder()
-                .sequence(i + 1) // DB sequence 컬럼이 0부터면 +1
-                .imageUrl(images.get(i))
-                .build()
-            )
+        .images(List.of(post.getCoverImage())
+            .stream()
+            .map(imageUrl -> EventImageResponse.builder()
+                .sequence(1) // ClubPost는 coverImage만 있으므로 sequence는 1로 설정
+                .imageUrl(imageUrl)
+                .build())
             .toList())
         .username(post.getUser().getUsername())
         .userImage(post.getUser().getProfileImageUrlOrDefault())
