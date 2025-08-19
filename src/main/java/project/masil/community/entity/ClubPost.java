@@ -35,4 +35,10 @@ public class ClubPost extends Post {
     this.content = updateRequest.getContent();
   }
 
+  private static final String coverImage = "https://masilbucket.s3.ap-northeast-2.amazonaws.com/profile/de7a0231-0d36-4390-9b39-32e71a9fad4d";
+
+  public String getCoverImage() {
+    return coverImage;
+  }
+
 }

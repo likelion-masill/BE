@@ -167,8 +167,7 @@ public class ClubPostService {
     // Favorite 테이블에서 "userId가 좋아요한 postId들"만 한 번에 조회 (IN 절 사용)
     Set<Long> likedIds = favoriteRepository.findLikedPostIds(userId, postIds);
 
-    String coverImage = clubPosts.getContent().getFirst().getEventPost().getEventImages()
-        .getFirst();
+    String coverImage = clubPosts.getContent().getFirst().getCoverImage();
     return clubPosts.map(
         clubPost -> ClubPostConverter.toClubPostSummaryResponse(clubPost, coverImage,
             likedIds.contains(clubPost.getId())));
