@@ -29,8 +29,6 @@ import project.masil.global.config.S3.AmazonS3Manager;
 import project.masil.global.config.S3.Uuid;
 import project.masil.global.config.S3.UuidRepository;
 import project.masil.global.exception.CustomException;
-import project.masil.global.util.parser.EventTypeParser;
-import project.masil.global.util.parser.RegionParser;
 import project.masil.infrastructure.client.ai.AiClient;
 import project.masil.infrastructure.client.ai.dto.AiSummarizeRequest;
 import project.masil.infrastructure.client.ai.dto.AiSummarizeResponse;
@@ -43,7 +41,6 @@ import project.masil.user.repository.UserRepository;
 @Slf4j
 public class EventPostService {
 
-  private final RegionParser regionParser;
 
   private final EventPostRepository eventPostRepository;
   private final RegionRepository regionRepository;
@@ -53,8 +50,6 @@ public class EventPostService {
   private final EventPostConverter converter;
 
   //좋아요 여부
-
-  private final EventTypeParser eventTypeParser;
 
 
   //s3
