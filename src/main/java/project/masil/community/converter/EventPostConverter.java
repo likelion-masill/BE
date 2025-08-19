@@ -9,12 +9,13 @@ import project.masil.community.entity.EventPost;
 @Component
 public class EventPostConverter {
 
-  public EventPostResponse toResponse(EventPost eventPost, boolean isLiked) {
+  public EventPostResponse toResponse(EventPost eventPost, boolean isLiked, boolean isAuthor) {
     return EventPostResponse.builder()
         .eventId(eventPost.getId())
         .username(eventPost.getUser().getUsername())
         .userImage(eventPost.getUser().getProfileImageUrlOrDefault())
         .isBusinessVerified(eventPost.getUser().isBusinessVerified())
+        .isAuthor(isAuthor)
         .eventType(eventPost.getEventType())
         .title(eventPost.getTitle())
         .content(eventPost.getContent())
