@@ -33,6 +33,9 @@ public class EventPostResponse {
   @Schema(description = "이벤트 내용", example = "성북 청년의 날 이벤트 내용")
   private String content;
 
+  @Schema(description = "이벤트 지역 정보")
+  private RegionResponse region;
+
   @Schema(description = "이벤트 세부 장소", example = "서경로 124")
   private String location;
 
