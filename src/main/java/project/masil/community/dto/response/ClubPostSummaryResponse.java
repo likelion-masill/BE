@@ -20,6 +20,9 @@ public class ClubPostSummaryResponse {
   @Schema(description = "작성자 프로필 이미지 URL", example = "https://my-event01.jpg")
   private String userImage;
 
+  @Schema(description = "작성자 여부", example = "true")
+  private boolean isAuthor;
+
   @Schema(description = "소모임 게시글 제목", example = "성북 청년의 날 행사 소모임")
   private String title;
 
