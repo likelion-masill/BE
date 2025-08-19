@@ -21,11 +21,20 @@ public class EventPostResponse {
   @Schema(description = "작성자 프로필 이미지", example = "https://my-e~~~~~vent01.jpg")
   private String userImage;
 
+  @Schema(description = "사장님 인증 여부", example = "true")
+  private boolean isBusinessVerified;
+
+  @Schema(description = "작성자 여부", example = "true")
+  private boolean isAuthor;
+
   @Schema(description = "이벤트 제목", example = "성북 청년의 날")
   private String title;
 
   @Schema(description = "이벤트 내용", example = "성북 청년의 날 이벤트 내용")
   private String content;
+
+  @Schema(description = "이벤트 지역 정보")
+  private RegionResponse region;
 
   @Schema(description = "이벤트 세부 장소", example = "서경로 124")
   private String location;

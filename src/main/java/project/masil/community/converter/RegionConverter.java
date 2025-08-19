@@ -7,6 +7,7 @@ public class RegionConverter {
 
   public static RegionResponse toRegionResponse(Region region) {
     return RegionResponse.builder()
+        .regionId(region.getId())
         .sido(region.getSido())
         .sigungu(region.getSigungu())
         .build();

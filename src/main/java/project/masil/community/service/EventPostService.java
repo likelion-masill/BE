@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import project.masil.community.converter.EventPostConverter;
+import project.masil.community.converter.RegionConverter;
 import project.masil.community.dto.request.EventPostRequest;
 import project.masil.community.dto.response.EventPostResponse;
 import project.masil.community.entity.EventPost;
@@ -41,13 +42,16 @@ import project.masil.user.repository.UserRepository;
 @Slf4j
 public class EventPostService {
 
+
   private final EventPostRepository eventPostRepository;
   private final RegionRepository regionRepository;
   private final UserRepository userRepository;
 
+
   private final EventPostConverter converter;
 
   //좋아요 여부
+
 
   //s3
   private final UuidRepository uuidRepository;
@@ -156,7 +160,8 @@ public class EventPostService {
 
     EventPost savedEventPost = eventPostRepository.save(eventPost);
 
-    return converter.toResponse(savedEventPost, false);
+    return converter.toResponse(savedEventPost, false,
+        userId.equals(savedEventPost.getUser().getId()), RegionConverter.toRegionResponse(region));
 
 
   }
@@ -178,7 +183,8 @@ public class EventPostService {
       isLiked = favoriteRepository.existsByUserIdAndPostId(userId, eventPost.getId());
     }
 
-    return converter.toResponse(eventPost, isLiked);
+    return converter.toResponse(eventPost, isLiked, userId.equals(eventPost.getUser().getId()),
+        RegionConverter.toRegionResponse(eventPost.getRegion()));
   }
 
   /**
@@ -195,7 +201,9 @@ public class EventPostService {
 
     // 1) 비로그인(=userId 없음)이라면 isLiked는 전부 false로 내려보냄
     if (userId == null) {
-      return page.map(post -> converter.toResponse(post, false));
+      return page.map(
+          post -> converter.toResponse(post, false, userId.equals(post.getUser().getId()),
+              RegionConverter.toRegionResponse(post.getRegion())));
     }
 
     // 2) 현재 페이지에 담긴 이벤트들의 ID만 뽑아옴 (배치 처리를 위한 준비)
@@ -205,7 +213,8 @@ public class EventPostService {
     Set<Long> likedIds = favoriteRepository.findLikedPostIds(userId, postIds);
 
     // 4) 각 게시글이 likedIds에 포함되어 있으면 isLiked=true로 DTO 변환 => 해당 이벤트 게시글Id가 내가 좋아요한 이벤트 게시글 ID(likedIds)인지 확인
-    return page.map(post -> converter.toResponse(post, likedIds.contains(post.getId())));
+    return page.map(post -> converter.toResponse(post, likedIds.contains(post.getId()),
+        userId.equals(post.getUser().getId()), RegionConverter.toRegionResponse(post.getRegion())));
   }
 
   /**
@@ -224,7 +233,9 @@ public class EventPostService {
 
     // 1) 비로그인(=userId 없음)이라면 isLiked는 전부 false로 내려보냄
     if (userId == null) {
-      return page.map(post -> converter.toResponse(post, false));
+      return page.map(
+          post -> converter.toResponse(post, false, userId.equals(post.getUser().getId()),
+              RegionConverter.toRegionResponse(post.getRegion())));
     }
 
     // 2) 현재 페이지에 담긴 이벤트들의 ID만 뽑아옴 (배치 처리를 위한 준비)
@@ -234,7 +245,8 @@ public class EventPostService {
     Set<Long> likedIds = favoriteRepository.findLikedPostIds(userId, postIds);
 
     // 4) 각 게시글이 likedIds에 포함되어 있으면 isLiked=true로 DTO 변환 => 해당 이벤트 게시글Id가 내가 좋아요한 이벤트 게시글 ID(likedIds)인지 확인
-    return page.map(post -> converter.toResponse(post, likedIds.contains(post.getId())));
+    return page.map(post -> converter.toResponse(post, likedIds.contains(post.getId()),
+        userId.equals(post.getUser().getId()), RegionConverter.toRegionResponse(post.getRegion())));
 
   }
 
@@ -295,7 +307,8 @@ public class EventPostService {
 
     boolean isLiked = favoriteRepository.existsByUserIdAndPostId(userId, eventPost.getId());
     // @Transactional이 있어서 변경감지로 저장되므로 save() 불필요. 항상 마지막에 반환
-    return converter.toResponse(eventPost, isLiked);
+    return converter.toResponse(eventPost, isLiked, userId.equals(eventPost.getUser().getId()),
+        RegionConverter.toRegionResponse(region));
   }
 
   public Boolean deleteEvent(Long eventPostId) {

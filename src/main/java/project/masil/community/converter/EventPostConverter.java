@@ -4,15 +4,20 @@ import java.util.stream.IntStream;
 import org.springframework.stereotype.Component;
 import project.masil.community.dto.response.EventImageResponse;
 import project.masil.community.dto.response.EventPostResponse;
+import project.masil.community.dto.response.RegionResponse;
 import project.masil.community.entity.EventPost;
 
 @Component
 public class EventPostConverter {
 
-  public EventPostResponse toResponse(EventPost eventPost, boolean isLiked) {
+  public EventPostResponse toResponse(EventPost eventPost, boolean isLiked, boolean isAuthor,
+      RegionResponse regionResponse) {
     return EventPostResponse.builder()
         .eventId(eventPost.getId())
         .username(eventPost.getUser().getUsername())
+        .userImage(eventPost.getUser().getProfileImageUrlOrDefault())
+        .isBusinessVerified(eventPost.getUser().isBusinessVerified())
+        .isAuthor(isAuthor)
         .eventType(eventPost.getEventType())
         .title(eventPost.getTitle())
         .content(eventPost.getContent())
@@ -29,11 +34,12 @@ public class EventPostConverter {
                     .build()
                 )
                 .toList()
-        ).userImage(eventPost.getUser().getProfileImageUrlOrDefault())
+        )
         .createdAt(eventPost.getCreatedAt())
         .viewCount(eventPost.getViewCount())
         .favoriteCount(eventPost.getFavoriteCount())
         .commentCount(eventPost.getCommentCount())
+        .region(regionResponse)
         .location(eventPost.getLocation())
         .isLiked(isLiked)
         .build();

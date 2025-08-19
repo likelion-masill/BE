@@ -55,10 +55,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     registry.addEndpoint("/websocket/chat")
         .setHandshakeHandler(jwtHandshakeHandler) // ★ 추가
         // ✅ credentials 허용 시 "*" 금지 → 명시적으로 허용 오리진 나열
-        .setAllowedOriginPatterns(
-            "http://localhost:5173"
-            // 운영 도메인도 필요 시 추가: "https://your-domain.com"
-        )
+        .setAllowedOriginPatterns("*")
+//        .setAllowedOriginPatterns("http://localhost:5173")
         .withSockJS();
   }
 
