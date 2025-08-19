@@ -4,6 +4,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import project.masil.community.converter.RegionConverter;
 import project.masil.community.dto.response.RegionIdResponse;
 import project.masil.community.dto.response.RegionResponse;
 import project.masil.community.dto.response.SidoResponse;
@@ -88,7 +89,7 @@ public class RegionService {
   public RegionResponse getRegionById(Long id) {
     log.info("[서비스] 지역 조회 시도: id = {}", id);
     return regionRepository.findById(id)
-        .map(region -> new RegionResponse(region.getSido(), region.getSigungu()))
+        .map(region -> RegionConverter.toRegionResponse(region))
         .orElseThrow(() -> new CustomException(RegionErrorCode.REGION_NOT_FOUND));
   }
 
