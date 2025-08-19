@@ -71,7 +71,8 @@ public class ClubPostService {
         .build();
 
     ClubPost saved = clubPostRepository.save(clubPost);
-    return ClubPostConverter.toClubPostDetailResponse(saved, false);
+    return ClubPostConverter.toClubPostDetailResponse(saved, false,
+        userId.equals(eventPost.getUser().getId()));
   }
 
   /**
@@ -89,7 +90,8 @@ public class ClubPostService {
 
     return ClubPostConverter.toClubPostDetailResponse(
         clubPost
-        , favoriteRepository.existsByUserIdAndPostId(userId, clubId));
+        , favoriteRepository.existsByUserIdAndPostId(userId, clubId)
+        , userId.equals(clubPost.getUser().getId()));
   }
 
   /**
@@ -118,7 +120,8 @@ public class ClubPostService {
 
     return ClubPostConverter.toClubPostDetailResponse(
         clubPost,
-        favoriteRepository.existsByUserIdAndPostId(userId, clubId));
+        favoriteRepository.existsByUserIdAndPostId(userId, clubId)
+        , userId.equals(clubPost.getUser().getId()));
   }
 
   /**
@@ -170,7 +173,8 @@ public class ClubPostService {
     String coverImage = clubPosts.getContent().getFirst().getCoverImage();
     return clubPosts.map(
         clubPost -> ClubPostConverter.toClubPostSummaryResponse(clubPost, coverImage,
-            likedIds.contains(clubPost.getId())));
+            likedIds.contains(clubPost.getId())
+            , userId.equals(clubPost.getUser().getId())));
   }
 
 }

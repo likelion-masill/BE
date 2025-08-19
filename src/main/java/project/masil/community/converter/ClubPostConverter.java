@@ -7,11 +7,12 @@ import project.masil.community.entity.ClubPost;
 public class ClubPostConverter {
 
   public static ClubPostDetailResponse toClubPostDetailResponse(
-      ClubPost clubPost, boolean isLiked) {
+      ClubPost clubPost, boolean isLiked, boolean isAuthor) {
     return ClubPostDetailResponse.builder()
         .clubId(clubPost.getId())
         .username(clubPost.getUser().getUsername())
         .userImage(clubPost.getUser().getProfileImageUrlOrDefault())
+        .isAuthor(isAuthor)
         .title(clubPost.getTitle())
         .content(clubPost.getContent())
         .location(clubPost.getLocation())
@@ -26,11 +27,12 @@ public class ClubPostConverter {
   }
 
   public static ClubPostSummaryResponse toClubPostSummaryResponse(
-      ClubPost clubPost, String coverImage, boolean isLiked) {
+      ClubPost clubPost, String coverImage, boolean isLiked, boolean isAuthor) {
     return ClubPostSummaryResponse.builder()
         .clubId(clubPost.getId())
         .username(clubPost.getUser().getUsername())
         .userImage(clubPost.getUser().getProfileImageUrlOrDefault())
+        .isAuthor(isAuthor)
         .title(clubPost.getTitle())
         .content(clubPost.getContent())
         .location(clubPost.getLocation())
