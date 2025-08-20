@@ -1,18 +1,13 @@
 package project.masil.chat.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import project.masil.community.enums.EventType;
 
 /**
- * 대화가 시작된 '출처(컨텍스트)' 종류
- * - EVENT_POST : 이벤트 상세에서 '대화하기' -> 작성자와 DM
- * - COMMENT : 댓글 작성자 프로필에서 '채팅 신청' -> 댓글 작성자와 DM
- * - CLUB_POST : 소모임 게시글에서 '대화하기' -> 모임장과 DM
- *
- * 저장은 ChatRoom.contextType + contextId로 통일해서 관리
- * - `EVENT_POST` : `contextId = eventPostId`
- * - `COMMENT` : `contextId = commentId`
- * - `CLUB_POST` : `contextId = clubPostId`
+ * 대화가 시작된 '출처(컨텍스트)' 종류 - EVENT_POST : 이벤트 상세에서 '대화하기' -> 작성자와 DM - COMMENT : 댓글 작성자 프로필에서 '채팅 신청'
+ * -> 댓글 작성자와 DM - CLUB_POST : 소모임 게시글에서 '대화하기' -> 모임장과 DM
+ * <p>
+ * 저장은 ChatRoom.contextType + contextId로 통일해서 관리 - `EVENT_POST` : `contextId = eventPostId` -
+ * `COMMENT` : `contextId = commentId` - `CLUB_POST` : `contextId = clubPostId`
  */
 public enum ChatContextType {
   EVENT_POST("이벤트"),
@@ -31,6 +26,7 @@ public enum ChatContextType {
 
   /**
    * 문자열을 ChatContextType enum 객체로 변환
+   *
    * @param value 사용자가 입력한 문자열
    * @return
    */

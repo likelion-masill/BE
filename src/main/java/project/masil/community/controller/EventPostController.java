@@ -43,7 +43,8 @@ public class EventPostController {
   public ResponseEntity<BaseResponse<EventPostResponse>> createEvent(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @RequestPart("request") @Valid EventPostRequest eventPostRequest,
-      @RequestPart(value = "images", required = false) List<MultipartFile> images // ← EventErrorCode에서 예외처리
+      @RequestPart(value = "images", required = false) List<MultipartFile> images
+      // ← EventErrorCode에서 예외처리
   ) {
     EventPostResponse response = eventPostService.createEvent(userDetails.getUser().getId(),
         eventPostRequest, images);
@@ -52,8 +53,10 @@ public class EventPostController {
 
   @Operation(summary = "이벤트 단일 조회", description = "이벤트 단일 조회 API")
   @GetMapping("/{eventId}")
-  public ResponseEntity<BaseResponse<EventPostResponse>> getEvent(@PathVariable Long eventId, @AuthenticationPrincipal CustomUserDetails userDetails) {
-    EventPostResponse response = eventPostService.getEventPost(eventId, userDetails.getUser().getId());
+  public ResponseEntity<BaseResponse<EventPostResponse>> getEvent(@PathVariable Long eventId,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    EventPostResponse response = eventPostService.getEventPost(eventId,
+        userDetails.getUser().getId());
     return ResponseEntity.ok(BaseResponse.success("이벤트 단일 조회 성공", response));
   }
 
@@ -71,7 +74,8 @@ public class EventPostController {
     Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
     Pageable pageable = PageRequest.of(pageIndex, size, sort);
 
-    Page<EventPostResponse> response = eventPostService.getEventAll(regionId, pageable, userDetails.getUser().getId());
+    Page<EventPostResponse> response = eventPostService.getEventAll(regionId, pageable,
+        userDetails.getUser().getId());
     return ResponseEntity.ok(BaseResponse.success("이벤트 리스트 조회 성공", response));
   }
 
@@ -91,7 +95,8 @@ public class EventPostController {
     // 정렬 방향 및 기준 설정
     Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
     Pageable pageable = PageRequest.of(pageIndex, size, sort);
-    Page<EventPostResponse> eventTypeList = eventPostService.getEventTypeList(regionId, eventType, pageable, userDetails.getUser().getId());
+    Page<EventPostResponse> eventTypeList = eventPostService.getEventTypeList(regionId, eventType,
+        pageable, userDetails.getUser().getId());
     return ResponseEntity.ok(BaseResponse.success("이벤트 카테고리별 리스트 조회 성공", eventTypeList));
 
   }

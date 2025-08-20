@@ -18,20 +18,19 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 import project.masil.global.config.props.AiServerProps;
+import project.masil.global.config.props.OpenAIProps;
 import project.masil.global.config.props.OpenDataProps;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
 @Configuration
-@EnableConfigurationProperties({
-    OpenDataProps.class,
-    AiServerProps.class
-})
+@EnableConfigurationProperties({OpenDataProps.class, AiServerProps.class, OpenAIProps.class})
 @RequiredArgsConstructor
 public class WebClientConfig {
 
   private final OpenDataProps props;
   private final AiServerProps aiProps;
+  private final OpenAIProps openaiProps;
 
   @Bean
   public WebClient.Builder webClientBuilder() {
@@ -63,6 +62,16 @@ public class WebClientConfig {
   public WebClient aiClient(WebClient.Builder builder) {
     return builder.clone()
         .baseUrl(aiProps.getBaseUrl())
+        .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        .build();
+  }
+
+
+  @Bean(name = "openaiWebClient")
+  public WebClient openaiClient(WebClient.Builder builder) {
+    return builder.clone()
+        .baseUrl(openaiProps.getBaseUrl())
+        .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + openaiProps.getApiKey())
         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
         .build();
   }
