@@ -26,6 +26,7 @@ import project.masil.community.exception.RegionErrorCode;
 import project.masil.community.repository.EventPostRepository;
 import project.masil.community.repository.FavoriteRepository;
 import project.masil.community.repository.RegionRepository;
+import project.masil.embedding.service.EmbeddingPipelineService;
 import project.masil.global.config.S3.AmazonS3Manager;
 import project.masil.global.config.S3.Uuid;
 import project.masil.global.config.S3.UuidRepository;
@@ -46,6 +47,7 @@ public class EventPostService {
   private final EventPostRepository eventPostRepository;
   private final RegionRepository regionRepository;
   private final UserRepository userRepository;
+  private final EmbeddingPipelineService embeddingPipelineService;
 
 
   private final EventPostConverter converter;
@@ -159,6 +161,9 @@ public class EventPostService {
         .build();
 
     EventPost savedEventPost = eventPostRepository.save(eventPost);
+
+    embeddingPipelineService.upsertPost(savedEventPost.getId(), savedEventPost.getTitle(),
+        savedEventPost.getContent());
 
     return converter.toResponse(savedEventPost, false,
         userId.equals(savedEventPost.getUser().getId()), RegionConverter.toRegionResponse(region));

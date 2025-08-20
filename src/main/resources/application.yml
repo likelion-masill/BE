@@ -57,6 +57,11 @@ open-data:
   api-key: ${OPENDATA_API_KEY}
   base-url: https://api.odcloud.kr/api/nts-businessman/v1
 
+openai:
+  base-url: https://api.openai.com
+  api-key: ${OPENAI_API_KEY}
+  embedding-model: text-embedding-3-small
+
 ai:
   server:
     base-url: http://13.124.81.157:8000/
