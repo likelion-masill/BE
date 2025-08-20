@@ -23,4 +23,7 @@ public interface RegionRepository extends JpaRepository<Region, Long> {
 
   boolean existsById(Long id);
 
+  @Query("select distinct r.sido, r.sigungu from Region r")
+  List<Object[]> findAllPairs();
+  
 }
