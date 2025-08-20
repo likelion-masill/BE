@@ -1,5 +1,6 @@
 package project.masil.chat.controller;
 
+import com.fasterxml.jackson.databind.ser.Serializers;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -96,6 +97,24 @@ public class ChatController {
     );
     return ResponseEntity.ok(BaseResponse.success("채팅방 생성/조회 성공", response));
   }
+
+  /**
+   * 채팅방 조회
+   */
+  @Operation(
+          summary = "채팅방 조회(해당 채팅방 참여자만 가능)",
+          description = "작성자와 채팅방 생성자 모두 특정 채팅방 조회 가능"
+  )
+  @GetMapping("/room/{roomId}")
+  public ResponseEntity<BaseResponse<ChatRoomResponse>> getRoom(
+          @AuthenticationPrincipal CustomUserDetails userDetails,
+          @PathVariable Long roomId
+  ) {
+    Long userId = userDetails.getUser().getId();
+    ChatRoomResponse response = chatService.getRoomRowFor(roomId, userId);
+    return ResponseEntity.ok(BaseResponse.success("채팅방 조회 성공", response));
+  }
+
 
   /**
    * 이벤트 ID로 → 작성자와 1:1 대화
