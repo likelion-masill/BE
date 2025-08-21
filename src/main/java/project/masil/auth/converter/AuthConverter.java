@@ -11,6 +11,8 @@ public class AuthConverter {
     return LoginResponse.builder()
         .accessToken(accessToken)
         .userId(user.getId())
+        .nickname(user.getUsername())
+        .profileImageUrl(user.getProfileImageUrlOrDefault())
         .email(user.getEmail())
         .regionId(user.getRegion().getId())
         .role(user.getRole())

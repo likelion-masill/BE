@@ -17,6 +17,12 @@ public class LoginResponse {
   @Schema(description = "사용자 ID", example = "1")
   private Long userId;
 
+  @Schema(description = "사용자 닉네임", example = "jhjk1234")
+  private String nickname;
+
+  @Schema(description = "사용자 프로필 이미지 URL", example = "https://example.com/profile.jpg")
+  private String profileImageUrl;
+
   @Schema(description = "사용자 아이디 또는 이메일", example = "jhjk1234@gmail.com")
   private String email;
 

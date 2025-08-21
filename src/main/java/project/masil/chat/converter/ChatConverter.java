@@ -52,7 +52,7 @@ public class ChatConverter {
         .contextType(room.getContextType())
         .contextId(room.getContextId())
         .targetUserId(targetUserId)
-        .targetUserProfileImageUrl(targetUser.getProfileImageUrl())
+        .targetUserProfileImageUrl(targetUser.getProfileImageUrlOrDefault())
         .targetUserNickname(targetUser.getUsername())
         .lastMessage(room.getLastMessage())
         .lastMessageAt(room.getLastMessageAt()) // 마지막 메시지 시각
