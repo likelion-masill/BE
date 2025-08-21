@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -31,7 +32,8 @@ public class SecurityConfig {
         // CSRF 보호 기능 비활성화 (REST API에서는 필요없음)
         .csrf(AbstractHttpConfigurer::disable)
         // CORS 설정 활성화(보통은 CORS 설정 활성화 하지 않음. 서버에서 NginX로 CORS 검증)
-        .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
+        .cors(Customizer.withDefaults())
+        // .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
         // 기본 인증(HTTP Basic)과 폼 로그인 비활성화
         // → 브라우저 팝업 및 기본 로그인 페이지 차단, JWT 인증만 사용
         .httpBasic(AbstractHttpConfigurer::disable)
