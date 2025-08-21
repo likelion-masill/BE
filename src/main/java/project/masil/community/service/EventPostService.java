@@ -167,7 +167,8 @@ public class EventPostService {
 
     EventPost savedEventPost = eventPostRepository.save(eventPost);
 
-    embeddingPipelineService.upsertPost(savedEventPost.getId(), savedEventPost.getTitle(),
+    embeddingPipelineService.upsertPost(savedEventPost.getId(), region.getId(),
+        savedEventPost.getTitle(),
         savedEventPost.getContent());
 
     return converter.toResponse(savedEventPost, false,
