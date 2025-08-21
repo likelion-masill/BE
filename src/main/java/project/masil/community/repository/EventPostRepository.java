@@ -1,10 +1,13 @@
 package project.masil.community.repository;
 
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import project.masil.community.entity.EventPost;
 import project.masil.community.enums.EventType;
@@ -31,4 +34,11 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
    * @return
    */
   Page<EventPost> findByRegionIdAndEventType(Long regionId, EventType eventType, Pageable pageable);
+
+  @Query(
+      value = "SELECT * FROM event_post e WHERE e.id IN (:ids) ORDER BY e.created_at DESC LIMIT :limit",
+      nativeQuery = true
+  )
+  List<EventPost> findRecentByIds(@Param("ids") List<Long> ids, @Param("limit") int limit);
+
 }

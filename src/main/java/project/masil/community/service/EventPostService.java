@@ -27,6 +27,7 @@ import project.masil.community.repository.EventPostRepository;
 import project.masil.community.repository.FavoriteRepository;
 import project.masil.community.repository.RegionRepository;
 import project.masil.embedding.service.EmbeddingPipelineService;
+import project.masil.embedding.service.FeedbackService;
 import project.masil.global.config.S3.AmazonS3Manager;
 import project.masil.global.config.S3.Uuid;
 import project.masil.global.config.S3.UuidRepository;
@@ -35,6 +36,7 @@ import project.masil.infrastructure.client.ai.AiClient;
 import project.masil.infrastructure.client.ai.dto.AiSummarizeRequest;
 import project.masil.infrastructure.client.ai.dto.AiSummarizeResponse;
 import project.masil.user.entity.User;
+import project.masil.user.entity.UserActionType;
 import project.masil.user.exception.UserErrorCode;
 import project.masil.user.repository.UserRepository;
 
@@ -61,6 +63,9 @@ public class EventPostService {
   private final FavoriteRepository favoriteRepository;
 
   private final AiClient aiClient;
+
+  private final FeedbackService feedbackService;
+
 
   /**
    * 이벤트 작성자 userId를 반환 - 채팅 서비스에서 "이벤트 컨텍스트로 채팅 시작" 시 대상 사용자 검증 용도 - 존재하지 않으면 예외
@@ -187,6 +192,8 @@ public class EventPostService {
     if (userId != null) {
       isLiked = favoriteRepository.existsByUserIdAndPostId(userId, eventPost.getId());
     }
+    // 사용자 행동 피드백 반영
+    feedbackService.handle(userId, eventPostId, UserActionType.VIEW);
 
     return converter.toResponse(eventPost, isLiked, userId.equals(eventPost.getUser().getId()),
         RegionConverter.toRegionResponse(eventPost.getRegion()));
