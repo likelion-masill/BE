@@ -21,6 +21,7 @@ import project.masil.user.converter.UserConverter;
 import project.masil.user.dto.request.NicknameUpdateRequest;
 import project.masil.user.dto.request.SignUpRequest;
 import project.masil.user.dto.response.NicknameCheckResponse;
+import project.masil.user.dto.response.ProfileImageUpdateResponse;
 import project.masil.user.dto.response.SignUpResponse;
 import project.masil.user.entity.User;
 import project.masil.user.exception.UserErrorCode;
@@ -100,7 +101,7 @@ public class UserService {
    * @return 업로드된 이미지의 URL
    */
   @Transactional
-  public String uploadProfileImage(Long userId, MultipartFile image) {
+  public ProfileImageUpdateResponse uploadProfileImage(Long userId, MultipartFile image) {
     String uuid = UUID.randomUUID().toString();
     Uuid savedUuid = uuidRepository.save(Uuid.builder().uuid(uuid).build());
     String imageUrl = s3Manager.uploadFile(s3Manager.generateProfile(savedUuid), image);
@@ -109,7 +110,9 @@ public class UserService {
         .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
     user.setProfileImageUrl(imageUrl);
 
-    return imageUrl;
+    return ProfileImageUpdateResponse.builder()
+        .profileImageUrl(imageUrl)
+        .build();
 
   }
 

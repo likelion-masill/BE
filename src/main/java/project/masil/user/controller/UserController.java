@@ -23,6 +23,7 @@ import project.masil.global.security.CustomUserDetails;
 import project.masil.user.dto.request.NicknameUpdateRequest;
 import project.masil.user.dto.request.SignUpRequest;
 import project.masil.user.dto.response.NicknameCheckResponse;
+import project.masil.user.dto.response.ProfileImageUpdateResponse;
 import project.masil.user.dto.response.SignUpResponse;
 import project.masil.user.service.UserService;
 
@@ -63,7 +64,7 @@ public class UserController {
 
   @Operation(summary = "프로필 이미지 업로드 API", description = "사용자 프로필 이미지 업로드를 위한 API")
   @PostMapping(value = "/me/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<BaseResponse<String>> uploadProfileImage(
+  public ResponseEntity<BaseResponse<ProfileImageUpdateResponse>> uploadProfileImage(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @RequestPart(value = "profileImage", required = true) MultipartFile image) {
     return ResponseEntity.ok(BaseResponse.success("프로필 이미지 업로드 성공",
