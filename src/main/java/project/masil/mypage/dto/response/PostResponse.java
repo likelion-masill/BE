@@ -13,8 +13,11 @@ import project.masil.community.enums.PostType;
 @Schema(title = "PostResponse", description = "마이페이지 게시글 응답 DTO")
 public class PostResponse {
 
-  @Schema(description = "게시글 ID", example = "1")
-  private Long postId;
+  @Schema(description = "이벤트 게시글 ID", example = "30")
+  private Long eventId;
+
+  @Schema(description = "소모임 게시글 ID", example = "70")
+  private Long clubId;
 
   @Schema(description = "게시글 유형", example = "EVENT")
   private PostType postType;

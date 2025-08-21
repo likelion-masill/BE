@@ -22,7 +22,7 @@ public class MyPageConverter {
 
   private static PostResponse toPostResponse(EventPost post) {
     return PostResponse.builder()
-        .postId(post.getId())
+        .eventId(post.getId())
         .postType(post.getPostType())
         .images(IntStream.range(0, post.getEventImages().size())
             .mapToObj(i -> EventImageResponse.builder()
@@ -45,7 +45,8 @@ public class MyPageConverter {
   private static PostResponse toPostResponse(ClubPost post) {
     List<String> images = post.getEventPost().getEventImages();
     return PostResponse.builder()
-        .postId(post.getId())
+        .eventId(post.getEventPost().getId())
+        .clubId(post.getId())
         .postType(post.getPostType())
         .images(List.of(post.getCoverImage())
             .stream()
