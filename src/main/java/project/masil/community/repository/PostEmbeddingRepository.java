@@ -11,11 +11,9 @@ import project.masil.community.entity.PostEmbedding;
 public interface PostEmbeddingRepository extends JpaRepository<PostEmbedding, Long> {
 
   @Query("""
-      SELECT pe.postId
-      FROM PostEmbedding pe
-      JOIN Post p ON pe.postId = p.id
-      JOIN EventPost e ON e.id = p.id
-      WHERE e.region.id = :regionId
+      select pe.postId
+      from PostEmbedding pe
+      where pe.regionId = :regionId
       """)
   List<Long> findPostIdsByRegionId(@Param("regionId") Long regionId);
 

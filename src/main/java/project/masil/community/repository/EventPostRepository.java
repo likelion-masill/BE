@@ -35,11 +35,16 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
    */
   Page<EventPost> findByRegionIdAndEventType(Long regionId, EventType eventType, Pageable pageable);
 
-  @Query(
-      value = "SELECT * FROM event_post e WHERE e.id IN (:ids) ORDER BY e.created_at DESC LIMIT :limit",
-      nativeQuery = true
-  )
-  List<EventPost> findRecentByIds(@Param("ids") List<Long> ids, @Param("limit") int limit);
+  @Query(value = """
+      SELECT *
+      FROM event_post e
+      WHERE e.id IN (:ids)
+      ORDER BY e.created_at DESC, e.id DESC
+      LIMIT :limit OFFSET :offset
+      """, nativeQuery = true)
+  List<EventPost> findRecentByIdsPage(@Param("ids") List<Long> ids,
+      @Param("offset") int offset,
+      @Param("limit") int limit);
 
 
   @Query("SELECT e.id FROM EventPost e")
