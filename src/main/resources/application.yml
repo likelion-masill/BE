@@ -45,7 +45,8 @@ cors:
     - DELETE
     - PATCH
     - OPTIONS
-  allowed-headers: "*"
+  allowed-headers:
+    - "*"
   allow-credentials: true
 
 # S3
