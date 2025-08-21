@@ -32,12 +32,21 @@ spring:
 
 
 
+
 #CORS 설정
 cors:
   allowed-origins:
     - http://localhost:5173
     - https://masill.netlify.app
-
+  allowed-methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - PATCH
+    - OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
 
 # S3
 cloud:
