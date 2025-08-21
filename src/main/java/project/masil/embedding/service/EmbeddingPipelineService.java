@@ -49,8 +49,8 @@ public class EmbeddingPipelineService {
    * 게시글 저장/수정 시 호출: 임베딩 → DB → FAISS upsert
    */
   @Transactional
-  public void upsertPost(long postId, String title, String body) {
-    String input = title + body;
+  public void upsertPost(long postId, long regionId, String title, String body) {
+    String input = title + " \n\n###\n\n " + body;
 
     // 1) OpenAI 임베딩
     List<Float> vec = requestEmbedding(input);
@@ -59,6 +59,7 @@ public class EmbeddingPipelineService {
     PostEmbedding pe = postEmbeddingRepository.findById(postId).orElseGet(PostEmbedding::new);
     pe.setPostId(postId);
     pe.setEmbedding(EmbeddingCodec.toBytes(vec));
+    pe.setRegionId(regionId);
     postEmbeddingRepository.save(pe);
 
     // 3) 파이썬 FAISS upsert

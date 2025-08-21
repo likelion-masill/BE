@@ -47,7 +47,7 @@ public class EventPostSearchController {
   ) {
     return ResponseEntity.ok(
         BaseResponse.success("AI 추천 이벤트 조회 성공",
-            recommendationService.recommendByRegion(
+            recommendationService.recommendByAI(
                 userDetails.getUser().getId(), size
 
             )));

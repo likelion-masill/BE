@@ -41,4 +41,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
   )
   List<EventPost> findRecentByIds(@Param("ids") List<Long> ids, @Param("limit") int limit);
 
+
+  @Query("SELECT e.id FROM EventPost e")
+  List<Long> findAllIds();
 }

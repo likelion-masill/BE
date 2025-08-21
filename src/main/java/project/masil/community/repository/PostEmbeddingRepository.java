@@ -19,4 +19,6 @@ public interface PostEmbeddingRepository extends JpaRepository<PostEmbedding, Lo
       """)
   List<Long> findPostIdsByRegionId(@Param("regionId") Long regionId);
 
+  @Query("SELECT p.postId FROM PostEmbedding p")
+  List<Long> findAllIds();
 }

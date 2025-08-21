@@ -33,7 +33,7 @@ public class RecommendationService {
 
   private final EventPostSearchService eventPostSearchService;
 
-  public List<EventPostResponse> recommendByRegion(Long userId, int topK) {
+  public List<EventPostResponse> recommendByAI(Long userId, int topK) {
     // 0) 유효성
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
