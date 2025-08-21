@@ -43,6 +43,8 @@ public class SecurityConfig {
         .authorizeHttpRequests(
             request ->
                 request
+                    // OPTIONS 요청은 인증 없이 허용
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     // Swagger 경로 인증 허용
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
                     .permitAll()
