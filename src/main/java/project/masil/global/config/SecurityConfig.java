@@ -23,7 +23,6 @@ import project.masil.global.security.JwtAuthenticationFilter;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-  private final CorsConfig corsConfig;
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
   @Bean
