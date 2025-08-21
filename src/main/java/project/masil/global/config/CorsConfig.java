@@ -20,7 +20,7 @@ public class CorsConfig {
   @Bean
   public UrlBasedCorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration cfg = new CorsConfiguration();
-    cfg.setAllowedOriginPatterns(props.getAllowedOrigins()); // 정확 매칭이면 setAllowedOrigins
+    cfg.setAllowedOrigins(props.getAllowedOrigins()); // 정확 매칭이면 setAllowedOrigins
     cfg.setAllowedMethods(props.getAllowedMethods());
     cfg.setAllowedHeaders(props.getAllowedHeaders());
     cfg.setAllowCredentials(Boolean.TRUE.equals(props.getAllowCredentials()));
