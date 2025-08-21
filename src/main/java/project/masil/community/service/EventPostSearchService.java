@@ -35,6 +35,7 @@ import project.masil.infrastructure.client.ai.AiRerankService;
 import project.masil.user.entity.User;
 import project.masil.user.exception.UserErrorCode;
 import project.masil.user.repository.UserRepository;
+import project.masil.user.service.SearchLogService;
 
 @Service
 @RequiredArgsConstructor
@@ -52,11 +53,14 @@ public class EventPostSearchService {
 
   private final EventPostConverter converter;
   private final FavoriteRepository favoriteRepository;
-
+  private final SearchLogService searchLogService;
   private final UserRepository userRepository;
 
-  @Transactional(readOnly = true)
+  @Transactional
   public Page<EventPostResponse> search(Long userId, String keyword, Pageable pageable) {
+
+    // 검색 로그 기록
+    searchLogService.log(userId, keyword);
 
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));

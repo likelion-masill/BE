@@ -40,7 +40,7 @@ public class EventPostSearchController {
     Pageable pageable = PageRequest.of(pageIndex, size);
     return ResponseEntity.ok(
         BaseResponse.success(
-            "AI 검색 결과 조회 성공",
+            "키워드 검색 결과 조회 성공",
             eventPostSearchService.search(userDetails.getUser().getId(), query, pageable)
         )
     );
