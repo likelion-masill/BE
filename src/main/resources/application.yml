@@ -34,7 +34,9 @@ spring:
 
 #CORS 설정
 cors:
-  allowed-origins: http://localhost:5173, https://masill.netlify.app/
+  allowed-origins:
+    - http://localhost:5173
+    - https://masill.netlify.app
 
 
 # S3
