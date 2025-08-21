@@ -4,6 +4,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,15 +44,17 @@ public class EventPostSearchController {
 
   @Operation(summary = "AI 추천 이벤트 조회", description = "AI 추천 이벤트를 조회하는 API")
   @GetMapping("/ai-recommendations")
-  public ResponseEntity<BaseResponse<List<EventPostResponse>>> getAIRecommendedEvents(
+  public ResponseEntity<BaseResponse<Page<EventPostResponse>>> getAIRecommendedEvents(
       @AuthenticationPrincipal CustomUserDetails userDetails,
+      @RequestParam(defaultValue = "1") int page,          // ← 1부터 받기
       @RequestParam(defaultValue = "20") int size
   ) {
+    int pageIndex = Math.max(0, page - 1);
+    Pageable pageable = PageRequest.of(pageIndex, size);
     return ResponseEntity.ok(
         BaseResponse.success("AI 추천 이벤트 조회 성공",
             recommendationService.recommendByAI(
-                userDetails.getUser().getId(), size
-
+                userDetails.getUser().getId(), pageable
             )));
   }
 
