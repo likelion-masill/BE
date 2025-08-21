@@ -28,6 +28,24 @@ public class EventPostSearchController {
   private final EventPostSearchService eventPostSearchService;
   private final RecommendationService recommendationService;
 
+  @Operation(summary = "키워드 검색", description = "키워드로 이벤트를 검색하는 API")
+  @GetMapping("/search")
+  public ResponseEntity<BaseResponse<Page<EventPostResponse>>> search(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @RequestParam String query,
+      @RequestParam(defaultValue = "1") int page,          // ← 1부터 받기
+      @RequestParam(defaultValue = "20") int size
+  ) {
+    int pageIndex = Math.max(0, page - 1);
+    Pageable pageable = PageRequest.of(pageIndex, size);
+    return ResponseEntity.ok(
+        BaseResponse.success(
+            "키워드 검색 결과 조회 성공",
+            eventPostSearchService.search(userDetails.getUser().getId(), query, pageable)
+        )
+    );
+  }
+
   @Operation(summary = "AI 검색", description = "AI 검색을 통해 이벤트를 검색하는 API")
   @GetMapping("/search-ai")
   public ResponseEntity<BaseResponse<List<EventPostResponse>>> searchEventsByAi(

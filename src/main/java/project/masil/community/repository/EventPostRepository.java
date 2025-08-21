@@ -16,6 +16,47 @@ import project.masil.community.enums.EventType;
 public interface EventPostRepository extends JpaRepository<EventPost, Long>,
     JpaSpecificationExecutor<EventPost> {
 
+  @Query(value = """
+      SELECT p.id,
+             MATCH(p.title, p.content) AGAINST(:q IN NATURAL LANGUAGE MODE) AS score
+      FROM Post p
+      JOIN events e ON e.id = p.id
+      WHERE e.region_id = :regionId
+        AND MATCH(p.title, p.content) AGAINST(:q IN NATURAL LANGUAGE MODE)
+      ORDER BY score DESC, p.id DESC
+      LIMIT :limit OFFSET :offset
+      """, nativeQuery = true)
+  List<Object[]> searchPostIdsByKeywordInRegion(
+      @Param("q") String keyword,
+      @Param("regionId") Long regionId,
+      @Param("limit") int limit,
+      @Param("offset") int offset
+  );
+
+  @Query(value = """
+      SELECT COUNT(*)
+      FROM Post p
+      JOIN events e ON e.id = p.id
+      WHERE e.region_id = :regionId
+        AND MATCH(p.title, p.content) AGAINST(:q IN NATURAL LANGUAGE MODE)
+      """, nativeQuery = true)
+  long countByKeywordInRegion(
+      @Param("q") String keyword,
+      @Param("regionId") Long regionId
+  );
+
+
+  @Query("""
+      SELECT e
+      FROM EventPost e
+      WHERE e.id IN :ids
+      ORDER BY FUNCTION('FIND_IN_SET', e.id, :orderCsv)
+      """)
+  List<EventPost> findAllByIdInOrder(
+      @Param("ids") List<Long> ids,
+      @Param("orderCsv") String orderCsv
+  );
+
   /**
    * 페이징 처리 + N+1문제 해결하기 위해 @EntityGraph 추가 RegionId로 이벤트 게시글 전체 조회
    *
