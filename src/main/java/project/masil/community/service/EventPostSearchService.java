@@ -5,8 +5,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -51,6 +54,46 @@ public class EventPostSearchService {
   private final FavoriteRepository favoriteRepository;
 
   private final UserRepository userRepository;
+
+  @Transactional(readOnly = true)
+  public Page<EventPostResponse> search(Long userId, String keyword, Pageable pageable) {
+
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+    Long regionId = user.getRegion().getId();
+    if (regionId == null) {
+      return Page.empty(pageable);
+    }
+
+    int size = pageable.getPageSize();
+    int offset = (int) pageable.getOffset();
+
+    List<Object[]> rows = repo.searchPostIdsByKeywordInRegion(keyword, regionId, size, offset);
+    List<Long> ids = rows.stream()
+        .map(r -> ((Number) r[0]).longValue())
+        .toList();
+    if (ids.isEmpty()) {
+      return Page.empty(pageable);
+    }
+
+    String orderCsv = ids.stream()
+        .map(String::valueOf)
+        .collect(Collectors.joining(","));
+
+    List<EventPost> posts = repo.findAllByIdInOrder(ids, orderCsv);
+    long total = repo.countByKeywordInRegion(keyword, regionId);
+
+    List<EventPostResponse> content = posts.stream()
+        .map(post -> {
+          boolean isLiked = favoriteRepository.existsByUserIdAndPostId(userId, post.getId());
+          boolean isMine = post.getUser().getId().equals(userId);
+          return converter.toResponse(
+              post, isLiked, isMine, RegionConverter.toRegionResponse(post.getRegion()));
+        })
+        .toList();
+
+    return new PageImpl<>(content, pageable, total);
+  }
 
   @Transactional(readOnly = true)
   public List<Long> findEventPostIds(
@@ -141,5 +184,5 @@ public class EventPostSearchService {
         Comparator.comparingInt(r -> pos.getOrDefault(r.getId(), Integer.MAX_VALUE)));
     return rows;
   }
-  
+
 }
