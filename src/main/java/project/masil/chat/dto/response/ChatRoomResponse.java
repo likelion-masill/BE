@@ -18,6 +18,7 @@ public class ChatRoomResponse {
   private Long contextId;
   private Long targetUserId;
   private String targetUserProfileImageUrl;
+  private String targetUserNickname;
   private String lastMessage;
   private LocalDateTime lastMessageAt;
   private int myUnreadCount;

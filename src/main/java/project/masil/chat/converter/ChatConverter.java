@@ -1,5 +1,6 @@
 package project.masil.chat.converter;
 
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import project.masil.chat.dto.response.ChatMessageResponse;
 import project.masil.chat.dto.response.ChatRoomResponse;
@@ -14,6 +15,7 @@ import project.masil.user.repository.UserRepository;
  * 채팅방 -> 채팅방응답 DTO로 바꿔주는 컨버터 - targetUserId와 myUnreadCount는 '현재 사용자' 관점으로 계산한다.
  */
 @Component
+@AllArgsConstructor
 public class ChatConverter {
 
   private UserRepository userRepository;
@@ -32,8 +34,7 @@ public class ChatConverter {
    * @return 현재 사용자 관점으로 치환된 방 응답 DTO
    */
   public ChatRoomResponse toRoomResponse(ChatRoom room, Long userId) {
-    User user = userRepository.findById(userId)
-        .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+
     // 내가 A인지(B인지) 판별 : true -> A, false -> B
     boolean userIdIsA = room.getUserAId().equals(userId);
 
@@ -43,12 +44,16 @@ public class ChatConverter {
     // 내 안읽음 수 : 내가 A면 unreadCountA, 내가 B면 unreadCountB
     int myUnreadCount = userIdIsA ? room.getUnreadCountA() : room.getUnreadCountB();
 
+    User targetUser = userRepository.findById(targetUserId)
+        .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+
     return ChatRoomResponse.builder()
         .roomId(room.getId())
         .contextType(room.getContextType())
         .contextId(room.getContextId())
         .targetUserId(targetUserId)
-        .targetUserProfileImageUrl(user.getProfileImageUrl())
+        .targetUserProfileImageUrl(targetUser.getProfileImageUrl())
+        .targetUserNickname(targetUser.getUsername())
         .lastMessage(room.getLastMessage())
         .lastMessageAt(room.getLastMessageAt()) // 마지막 메시지 시각
         .myUnreadCount(myUnreadCount) // 현재 사용자 관점의 내 안읽음 수
