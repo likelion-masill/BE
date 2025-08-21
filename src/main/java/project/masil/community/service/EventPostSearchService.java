@@ -1,6 +1,8 @@
 package project.masil.community.service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -131,12 +133,13 @@ public class EventPostSearchService {
       return List.of();
     }
     List<EventPost> rows = eventPostRepository.findAllById(orderedIds);
-    Map<Long, Integer> pos = new java.util.HashMap<>();
+    Map<Long, Integer> pos = new HashMap<>();
     for (int i = 0; i < orderedIds.size(); i++) {
       pos.put(orderedIds.get(i), i);
     }
     rows.sort(
-        java.util.Comparator.comparingInt(r -> pos.getOrDefault(r.getId(), Integer.MAX_VALUE)));
+        Comparator.comparingInt(r -> pos.getOrDefault(r.getId(), Integer.MAX_VALUE)));
     return rows;
   }
+  
 }

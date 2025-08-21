@@ -14,9 +14,11 @@ import project.masil.community.exception.CommentErrorCode;
 import project.masil.community.exception.PostErrorCode;
 import project.masil.community.repository.CommentRepository;
 import project.masil.community.repository.PostRepository;
+import project.masil.embedding.service.FeedbackService;
 import project.masil.global.exception.CustomException;
 import project.masil.global.response.ListResponse;
 import project.masil.user.entity.User;
+import project.masil.user.entity.UserActionType;
 import project.masil.user.exception.UserErrorCode;
 import project.masil.user.repository.UserRepository;
 
@@ -28,11 +30,12 @@ public class CommentService {
   private final CommentRepository commentRepository;
   private final UserRepository userRepository;
   private final PostRepository postRepository;
+  private final FeedbackService feedbackService;
 
   /**
-   * 댓글 작성자 userId를 반환
-   * - 채팅 서비스에서 "댓글 컨텍스트ID로 채팅 시작" 시 대상 사용자 검증 용도
-   * - 존재하지 않으면 예외(CommentErrorCode.COMMENT_NOT_FOUND)
+   * 댓글 작성자 userId를 반환 - 채팅 서비스에서 "댓글 컨텍스트ID로 채팅 시작" 시 대상 사용자 검증 용도 - 존재하지 않으면
+   * 예외(CommentErrorCode.COMMENT_NOT_FOUND)
+   *
    * @param commentId
    * @return
    */
@@ -73,6 +76,8 @@ public class CommentService {
         .build();
     post.incrementCommentCount();
     Comment saved = commentRepository.save(comment);
+
+    feedbackService.handle(userId, postId, UserActionType.COMMENT);
 
     return CommentConverter.toCommentResponse(saved);
   }
@@ -137,6 +142,9 @@ public class CommentService {
     post.incrementCommentCount();
 
     Comment savedChildComment = commentRepository.save(childComment);
+
+    // 대댓글은 살짝 애매
+    // feedbackService.handle(userId, postId, UserActionType.COMMENT);
 
     return CommentConverter.toCommentResponse(savedChildComment);
   }

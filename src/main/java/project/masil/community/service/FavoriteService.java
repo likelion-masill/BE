@@ -11,8 +11,10 @@ import project.masil.community.enums.PostType;
 import project.masil.community.exception.PostErrorCode;
 import project.masil.community.repository.FavoriteRepository;
 import project.masil.community.repository.PostRepository;
+import project.masil.embedding.service.FeedbackService;
 import project.masil.global.exception.CustomException;
 import project.masil.user.entity.User;
+import project.masil.user.entity.UserActionType;
 import project.masil.user.exception.UserErrorCode;
 import project.masil.user.repository.UserRepository;
 
@@ -23,6 +25,8 @@ public class FavoriteService {
   private final UserRepository userRepository;
   private final PostRepository postRepository;
   private final FavoriteRepository favoriteRepository;
+  private final FeedbackService feedbackService;
+
 
   /**
    * 게시글의 관심목록 상태를 토글합니다.
@@ -49,6 +53,7 @@ public class FavoriteService {
     // 즐겨찾기가 이미 존재하는 경우 삭제하고, 그렇지 않으면 새로 추가
     if (existing.isPresent()) {
       favoriteRepository.delete(existing.get());
+      feedbackService.handle(userId, postId, UserActionType.FAVORITE_REMOVE);
       post.decrementFavoriteCount();
     } else {
       Favorite favorite = Favorite.builder()
@@ -56,6 +61,7 @@ public class FavoriteService {
           .post(post)
           .build();
       favoriteRepository.save(favorite);
+      feedbackService.handle(userId, postId, UserActionType.FAVORITE_ADD);
       post.incrementFavoriteCount();
     }
     return FavoriteResponse.builder()
