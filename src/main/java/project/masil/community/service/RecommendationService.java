@@ -1,5 +1,10 @@
 package project.masil.community.service;
 
+import jakarta.annotation.Nullable;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -11,6 +16,7 @@ import project.masil.community.converter.EventPostConverter;
 import project.masil.community.converter.RegionConverter;
 import project.masil.community.dto.response.EventPostResponse;
 import project.masil.community.entity.EventPost;
+import project.masil.community.enums.EventType;
 import project.masil.community.repository.EventPostRepository;
 import project.masil.community.repository.FavoriteRepository;
 import project.masil.community.repository.PostEmbeddingRepository;
@@ -36,16 +42,42 @@ public class RecommendationService {
 
   private final EventPostSearchService eventPostSearchService;
 
-  public Page<EventPostResponse> recommendByAI(Long userId, Pageable pageable) {
+  public Page<EventPostResponse> recommendByAI(
+      Long userId,
+      @Nullable EventType eventType,
+      boolean today,
+      Pageable pageable
+  ) {
     // 0) 유효성
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
     Long regionId = user.getRegion().getId();
 
-    // 1) 후보 id 조회
-    List<Long> candidateIds = postEmbeddingRepository.findPostIdsByRegionId(regionId);
+    // 1) 후보 IDs 조회 (요구사항 우선순위 적용)
+    List<Long> candidateIds;
+    if (today) {
+      // 오늘과 일정이 겹치는 이벤트만 (Asia/Seoul 기준)
+      ZoneId KST = ZoneId.of("Asia/Seoul");
+      LocalDateTime startOfDay = LocalDate.now(KST).atStartOfDay();
+      LocalDateTime endOfDay = LocalDate.now(KST).atTime(LocalTime.MAX);
+
+      candidateIds = postEmbeddingRepository.findPostIdsByRegionIdAndActiveOnDate(
+          regionId, startOfDay, endOfDay
+      );
+
+    } else if (eventType != null) {
+      // 지역 + 이벤트 타입
+      candidateIds = postEmbeddingRepository.findPostIdsByRegionIdAndEventType(
+          regionId, eventType
+      );
+
+    } else {
+      // 지역만 (모든 타입)
+      candidateIds = postEmbeddingRepository.findPostIdsByRegionId(regionId);
+    }
+
     long total = candidateIds.size();
-    if (candidateIds.isEmpty()) {
+    if (total == 0) {
       return Page.empty(pageable);
     }
 
