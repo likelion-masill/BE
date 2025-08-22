@@ -68,4 +68,18 @@ public class EventPostResponse {
 
   @Schema(description = "좋아요 여부")
   private boolean isLiked;
+
+  @Schema(description = "UP 이벤트인지 여부")
+  private boolean isUp;
+
+  @Schema(description = "Up 시작 시각")
+  private LocalDateTime upStartedAt;
+
+  @Schema(description = "UP 종료 시각")
+  private LocalDateTime upEndAt;
+
+  @Schema(description = "Up 남은 시간(초)")
+  private Long upRemainingSeconds;   // ← LocalDateTime → Long 로 변경
+
+
 }
