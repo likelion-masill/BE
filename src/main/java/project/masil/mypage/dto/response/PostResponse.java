@@ -49,4 +49,10 @@ public class PostResponse {
   @Schema(description = "댓글 수", example = "68")
   private int commentCount;
 
+  @Schema(description = "사장님 인증 여부", example = "true")
+  private boolean isBusinessVerified;
+
+  @Schema(description = "좋아요 여부")
+  private boolean isLiked;
+
 }

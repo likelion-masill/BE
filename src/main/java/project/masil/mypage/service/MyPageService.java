@@ -1,6 +1,11 @@
 package project.masil.mypage.service;
 
+import static project.masil.mypage.converter.MyPageConverter.toPostResponse;
+
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -14,7 +19,6 @@ import project.masil.global.exception.CustomException;
 import project.masil.infrastructure.client.opendata.OpenDataClient;
 import project.masil.infrastructure.client.opendata.dto.BusinessInfoPayload;
 import project.masil.infrastructure.client.opendata.dto.OwnerVerifyApiResponse;
-import project.masil.mypage.converter.MyPageConverter;
 import project.masil.mypage.dto.request.OwnerVerifyRequest;
 import project.masil.mypage.dto.response.PostResponse;
 import project.masil.mypage.exception.MyPageErrorCode;
@@ -45,8 +49,20 @@ public class MyPageService {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
     Page<Post> posts = postRepository.findByUserOrderByCreatedAtDesc(user, pageable);
-    return posts
-        .map(MyPageConverter::toPostResponse);
+
+    List<Long> postIds = posts.getContent().stream()
+        .map(Post::getId)
+        .toList();
+
+    Set<Long> likedIds = postIds.isEmpty()
+        ? Set.of()
+        : new HashSet<>(favoriteRepository.findLikedPostIds(userId, postIds));
+
+    return posts.map(post -> {
+      boolean isBusinessVerified = post.getUser().isBusinessVerified();
+      boolean isLiked = likedIds.contains(post.getId());
+      return toPostResponse(post, isBusinessVerified, isLiked);
+    });
   }
 
   /**
@@ -61,8 +77,11 @@ public class MyPageService {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
     Page<Post> posts = favoriteRepository.findFavoritePostsAsPage(user, pageable);
-    return posts
-        .map(MyPageConverter::toPostResponse);
+    return posts.map(post -> {
+      boolean isBusinessVerified = post.getUser().isBusinessVerified();
+      boolean isLiked = true;
+      return toPostResponse(post, isBusinessVerified, isLiked);
+    });
   }
 
   /**
