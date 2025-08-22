@@ -76,9 +76,10 @@ public class CommentService {
         .build();
     post.incrementCommentCount();
     Comment saved = commentRepository.save(comment);
-
-    feedbackService.handle(userId, postId, UserActionType.COMMENT);
-
+    if (expectedType == PostType.EVENT) {
+      // 피드백 서비스는 이벤트 타입에 대해서만 처리
+      feedbackService.handle(userId, postId, UserActionType.COMMENT);
+    }
     return CommentConverter.toCommentResponse(saved);
   }
 
