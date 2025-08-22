@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -32,6 +34,7 @@ import project.masil.global.security.CustomUserDetails;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/events")
+@Slf4j
 @Tag(name = "Event API", description = "이벤트 API")
 public class EventPostController {
 
@@ -123,6 +126,37 @@ public class EventPostController {
   public ResponseEntity<BaseResponse<Boolean>> deletePost(@PathVariable Long eventId) {
     boolean ok = eventPostService.deleteEvent(eventId);
     return ResponseEntity.ok(BaseResponse.success("이벤트 삭제 성공", ok));
+  }
+
+  @Operation(summary = "이벤트 UP 시작", description = "결제 완료 후 n일 동안 상단 노출")
+  @PostMapping("/{eventId}/up/start")
+  public ResponseEntity<BaseResponse<EventPostResponse>> startUp(
+      @PathVariable Long eventId,
+      @RequestParam(defaultValue = "7") int days,                  // 예: 7일
+      @AuthenticationPrincipal CustomUserDetails user
+  ) {
+    EventPostResponse res = eventPostService.startUp(eventId, user.getUser().getId(), days);
+    return ResponseEntity.ok(BaseResponse.success("UP 시작", res));
+  }
+
+  @Operation(summary = "이벤트 UP 중지", description = "만료 전이라도 즉시 해제")
+  @PostMapping("/{eventId}/up/stop")
+  public ResponseEntity<BaseResponse<EventPostResponse>> stopUp(
+      @PathVariable Long eventId,
+      @AuthenticationPrincipal CustomUserDetails user
+  ) {
+    EventPostResponse response = eventPostService.stopUp(eventId, user.getUser().getId());
+    return ResponseEntity.ok(BaseResponse.success("UP 중지", response));
+  }
+
+  @Operation(summary = "이벤트 UP 상태 조회", description = "isUp/남은 기간 확인")
+  @GetMapping("/{eventId}/up/status")
+  public ResponseEntity<BaseResponse<EventPostResponse>> getUpStatus(
+      @PathVariable Long eventId,
+      @AuthenticationPrincipal CustomUserDetails user
+  ) {
+    EventPostResponse response = eventPostService.getEventStatus(eventId, user.getUser().getId());
+    return ResponseEntity.ok(BaseResponse.success("이벤트 Up 상태 조회 성공", response));
   }
 
 

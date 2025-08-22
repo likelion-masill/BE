@@ -54,6 +54,36 @@ public class EventPost extends Post {
   @ColumnDefault("0")
   private int viewCount = 0;
 
+  @Column(name = "is_UP", nullable = false)
+  private boolean isUp; //Up 게시물인지 아닌지
+
+  @Column(name = "up_at")
+  private LocalDateTime upAt; // Up 시작 시각 (isUp=true일 때만 채움)
+
+  @Column(name = "up_expires_at")
+  private LocalDateTime upExpiresAt; // Up 만료 시각
+
+  public void startUpForDays(int days) {
+    this.isUp = true;
+    this.upAt = LocalDateTime.now();
+    this.upExpiresAt = this.upAt.plusDays(days);
+  }
+
+  public void stopUp() {
+    this.isUp = false;
+    this.upExpiresAt = null;
+    this.upAt = null;
+  }
+
+  // 조회 시 만료된 경우 자동 해제하고 싶다면 헬퍼
+  public void refreshUpStatusByNow() {
+    if (this.isUp && this.upExpiresAt != null && this.upExpiresAt.isBefore(LocalDateTime.now())) {
+      stopUp();
+    }
+  }
+
+
+
   @ElementCollection
   @CollectionTable(name = "event_images", joinColumns = @JoinColumn(name = "event_id"))
   @Column(name = "image_url", nullable = false)         // 값 컬럼 이름 지정
@@ -64,6 +94,7 @@ public class EventPost extends Post {
   @Builder.Default
   @OneToMany(mappedBy = "eventPost", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ClubPost> clubPosts = new ArrayList<>();
+
 
   //이벤트 수정 메소드
   public void updateEventPost(Region region, EventType type, String title, String content,

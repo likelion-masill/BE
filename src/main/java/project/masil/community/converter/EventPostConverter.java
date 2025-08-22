@@ -1,5 +1,7 @@
 package project.masil.community.converter;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.stream.IntStream;
 import org.springframework.stereotype.Component;
 import project.masil.community.dto.response.EventImageResponse;
@@ -12,6 +14,13 @@ public class EventPostConverter {
 
   public EventPostResponse toResponse(EventPost eventPost, boolean isLiked, boolean isAuthor,
       RegionResponse regionResponse) {
+
+    long remainingSeconds = 0L;
+    if (eventPost.isUp() && eventPost.getUpExpiresAt() != null) {
+      remainingSeconds = Math.max(0L,                      // 만료 시 음수 방지
+          Duration.between(LocalDateTime.now(), eventPost.getUpExpiresAt()).getSeconds());
+    }
+
     return EventPostResponse.builder()
         .eventId(eventPost.getId())
         .username(eventPost.getUser().getUsername())
@@ -40,8 +49,13 @@ public class EventPostConverter {
         .favoriteCount(eventPost.getFavoriteCount())
         .commentCount(eventPost.getCommentCount())
         .region(regionResponse)
+        .isUp(eventPost.isUp()) // isUp 게시물인지
         .location(eventPost.getLocation())
         .isLiked(isLiked)
+        // ↓ 내려주면 프론트에서 "남은 기간: 6일 23:59:53" UI 만들기 쉬움
+        .upEndAt(eventPost.getUpExpiresAt())
+        .upStartedAt(eventPost.getUpAt())
+        .upRemainingSeconds(remainingSeconds)  // ← Long 필드에 세팅 (오토박싱)
         .build();
   }
 

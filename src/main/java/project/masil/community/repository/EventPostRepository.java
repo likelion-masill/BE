@@ -1,8 +1,10 @@
 package project.masil.community.repository;
 
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -15,6 +17,17 @@ import project.masil.community.enums.EventType;
 @Repository
 public interface EventPostRepository extends JpaRepository<EventPost, Long>,
     JpaSpecificationExecutor<EventPost> {
+
+  //UP 게시물 상단 노출 우선 정렬을 위해 기존 정렬 메서드는 사용 X
+//  /**
+//   * 페이징 처리 + N+1문제 해결하기 위해 @EntityGraph 추가
+//   * RegionId로 이벤트 게시글 전체 조회
+//   *
+//   * @param pageable
+//   * @return
+//   */
+//  @EntityGraph(attributePaths = {"user", "eventImages"})
+//  Page<EventPost> findAllByRegionIdOrderByCreatedAtDesc(Long regionId, Pageable pageable);
 
   @Query(value = """
       SELECT p.id,
@@ -45,7 +58,6 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
       @Param("regionId") Long regionId
   );
 
-
   @Query("""
       SELECT e
       FROM EventPost e
@@ -56,25 +68,6 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
       @Param("ids") List<Long> ids,
       @Param("orderCsv") String orderCsv
   );
-
-  /**
-   * 페이징 처리 + N+1문제 해결하기 위해 @EntityGraph 추가 RegionId로 이벤트 게시글 전체 조회
-   *
-   * @param pageable
-   * @return
-   */
-  @EntityGraph(attributePaths = {"user", "eventImages"})
-  Page<EventPost> findAllByRegionIdOrderByCreatedAtDesc(Long regionId, Pageable pageable);
-
-  /**
-   * RegionId와 이벤트 타입으로 이벤트 게시글 리스트 조회
-   *
-   * @param regionId
-   * @param eventType
-   * @param pageable
-   * @return
-   */
-  Page<EventPost> findByRegionIdAndEventType(Long regionId, EventType eventType, Pageable pageable);
 
   @Query(value = """
       SELECT *
@@ -90,4 +83,59 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
 
   @Query("SELECT e.id FROM EventPost e")
   List<Long> findAllIds();
+
+  /**
+   * [전체 조회] regionId 기준
+   * - 활성 UP: isUp=true AND (upExpiresAt IS NULL OR upExpiresAt > NOW)
+   * - 1순위: 활성 UP 우선
+   * - 2순위: 활성 UP 끼리는 seed 기반 랜덤 (CRC32 사용)
+   * - 3순위: 나머지 최신순(createdAt desc, id desc)
+   */
+  @EntityGraph(attributePaths = {"user", "eventImages"})
+  @Query("""
+      SELECT e
+      FROM EventPost e
+      WHERE e.region.id = :regionId
+      ORDER BY
+        CASE
+          WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)) THEN 0
+          ELSE 1
+        END,
+        CASE
+          WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP))
+            THEN FUNCTION('CRC32', CONCAT(CAST(e.id AS string), :seed))
+        END,
+        e.createdAt DESC, e.id DESC
+      """)
+  Page<EventPost> findSeededUpFirst(@Param("regionId") Long regionId,
+      @Param("seed") long seed,
+      Pageable pageable);
+
+  /**
+   * [타입별 조회] regionId + eventType
+   * - 정렬 로직 동일
+   */
+  @EntityGraph(attributePaths = {"user", "eventImages"})
+  @Query("""
+      SELECT e
+      FROM EventPost e
+      WHERE e.region.id = :regionId
+        AND e.eventType = :eventType
+      ORDER BY
+        CASE
+          WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)) THEN 0
+          ELSE 1
+        END,
+        CASE
+          WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP))
+            THEN FUNCTION('CRC32', CONCAT(CAST(e.id AS string), :seed))
+        END,
+        e.createdAt DESC, e.id DESC
+      """)
+  Page<EventPost> findSeededUpFirstByType(@Param("regionId") Long regionId,
+      @Param("eventType") EventType eventType,
+      @Param("seed") long seed,
+      Pageable pageable);
+
+
 }
