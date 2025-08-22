@@ -1,8 +1,15 @@
 server:
   servlet:
     context-path: /api
+  tomcat:
+    max-swallow-size: -1
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 30MB
+      max-request-size: 50MB
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -32,10 +39,11 @@ spring:
 
 
 
+
+
 #CORS 설정
 cors:
-  allowed-origins: http://localhost:5173
-
+  allowed-origins: "http://localhost:5173,https://masill.netlify.app,https://hyunjun.store"
 
 # S3
 cloud:

@@ -21,7 +21,13 @@ public class CorsConfig {
     // 환경 변수에 정의된 출처만 허용
     configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins));
     // 리스트에 작성한 HTTP 메소드 요청만 허용
-    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH"));
+    configuration.setAllowedMethods(
+        Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+
+    // ★ 프리플라이트에서 자주 쓰는 헤더들 허용
+    configuration.setAllowedHeaders(Arrays.asList(
+        "Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"));
+
     // 리스트에 작성한 헤더들이 포함된 요청만 허용
     configuration.setAllowCredentials(true);
     // 모든 경로에 대해 위의 CORS 설정을 적용
@@ -29,5 +35,4 @@ public class CorsConfig {
     source.registerCorsConfiguration("/**", configuration);
     return source;
   }
-
 }

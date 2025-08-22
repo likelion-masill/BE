@@ -164,6 +164,10 @@ public class ClubPostService {
     Page<ClubPost> clubPosts = clubPostRepository.findByEventPostOrderByCreatedAtDesc(eventPost,
         pageable);
 
+    if (clubPosts.isEmpty()) {
+      return Page.empty(pageable);
+    }
+
     //  현재 페이지에 담긴 이벤트들의 ID만 뽑아옴 (배치 처리를 위한 준비)
     List<Long> postIds = clubPosts.getContent().stream().map(ClubPost::getId).toList();
 
