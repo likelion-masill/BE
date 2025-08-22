@@ -11,6 +11,7 @@ import project.masil.community.converter.EventPostConverter;
 import project.masil.community.converter.RegionConverter;
 import project.masil.community.dto.response.EventPostResponse;
 import project.masil.community.entity.EventPost;
+import project.masil.community.enums.EventType;
 import project.masil.community.repository.EventPostRepository;
 import project.masil.community.repository.FavoriteRepository;
 import project.masil.community.repository.PostEmbeddingRepository;
@@ -36,14 +37,16 @@ public class RecommendationService {
 
   private final EventPostSearchService eventPostSearchService;
 
-  public Page<EventPostResponse> recommendByAI(Long userId, Pageable pageable) {
+  public Page<EventPostResponse> recommendByAI(Long userId, EventType eventType,
+      Pageable pageable) {
     // 0) 유효성
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
     Long regionId = user.getRegion().getId();
 
     // 1) 후보 id 조회
-    List<Long> candidateIds = postEmbeddingRepository.findPostIdsByRegionId(regionId);
+    List<Long> candidateIds = postEmbeddingRepository.findPostIdsByRegionIdAndEventType(regionId,
+        eventType);
     long total = candidateIds.size();
     if (candidateIds.isEmpty()) {
       return Page.empty(pageable);

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import project.masil.community.dto.response.EventPostResponse;
+import project.masil.community.enums.EventType;
 import project.masil.community.service.EventPostSearchService;
 import project.masil.community.service.RecommendationService;
 import project.masil.global.response.BaseResponse;
@@ -64,6 +65,7 @@ public class EventPostSearchController {
   @GetMapping("/ai-recommendations")
   public ResponseEntity<BaseResponse<Page<EventPostResponse>>> getAIRecommendedEvents(
       @AuthenticationPrincipal CustomUserDetails userDetails,
+      @RequestParam EventType eventType,
       @RequestParam(defaultValue = "1") int page,          // ← 1부터 받기
       @RequestParam(defaultValue = "20") int size
   ) {
@@ -72,7 +74,7 @@ public class EventPostSearchController {
     return ResponseEntity.ok(
         BaseResponse.success("AI 추천 이벤트 조회 성공",
             recommendationService.recommendByAI(
-                userDetails.getUser().getId(), pageable
+                userDetails.getUser().getId(), eventType, pageable
             )));
   }
 

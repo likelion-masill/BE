@@ -6,16 +6,19 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import project.masil.community.entity.PostEmbedding;
+import project.masil.community.enums.EventType;
 
 @Repository
 public interface PostEmbeddingRepository extends JpaRepository<PostEmbedding, Long> {
 
   @Query("""
-      select pe.postId
-      from PostEmbedding pe
-      where pe.regionId = :regionId
+      SELECT e.id
+      FROM EventPost e
+      WHERE e.region.id = :regionId
+      AND e.eventType = :eventType
       """)
-  List<Long> findPostIdsByRegionId(@Param("regionId") Long regionId);
+  List<Long> findPostIdsByRegionIdAndEventType(@Param("regionId") Long regionId,
+      @Param("eventType") EventType eventType);
 
   @Query("SELECT p.postId FROM PostEmbedding p")
   List<Long> findAllIds();
