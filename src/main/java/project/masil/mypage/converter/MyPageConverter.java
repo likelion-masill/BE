@@ -12,15 +12,17 @@ import project.masil.mypage.exception.MyPageErrorCode;
 
 public class MyPageConverter {
 
-  public static PostResponse toPostResponse(Post post) {
+  public static PostResponse toPostResponse(Post post, boolean isBusinessVerified,
+      boolean isLiked) {
     return switch (post.getPostType()) {
-      case EVENT -> toPostResponse((EventPost) post);
-      case CLUB -> toPostResponse((ClubPost) post);
+      case EVENT -> toPostResponse((EventPost) post, isBusinessVerified, isLiked);
+      case CLUB -> toPostResponse((ClubPost) post, isBusinessVerified, isLiked);
       default -> throw new CustomException(MyPageErrorCode.UNKNOWN_POST_TYPE);
     };
   }
 
-  private static PostResponse toPostResponse(EventPost post) {
+  private static PostResponse toPostResponse(EventPost post, boolean isBusinessVerified,
+      boolean isLiked) {
     return PostResponse.builder()
         .eventId(post.getId())
         .postType(post.getPostType())
@@ -39,10 +41,13 @@ public class MyPageConverter {
         .endAt(post.getEndAt())
         .favoriteCount(post.getFavoriteCount())
         .commentCount(post.getCommentCount())
+        .isBusinessVerified(isBusinessVerified)
+        .isLiked(isLiked)
         .build();
   }
 
-  private static PostResponse toPostResponse(ClubPost post) {
+  private static PostResponse toPostResponse(ClubPost post, boolean isBusinessVerified,
+      boolean isLiked) {
     List<String> images = post.getEventPost().getEventImages();
     return PostResponse.builder()
         .eventId(post.getEventPost().getId())
@@ -63,6 +68,8 @@ public class MyPageConverter {
         .endAt(null)
         .favoriteCount(post.getFavoriteCount())
         .commentCount(post.getCommentCount())
+        .isBusinessVerified(isBusinessVerified)
+        .isLiked(isLiked)
         .build();
   }
 
