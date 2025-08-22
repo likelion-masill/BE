@@ -53,7 +53,10 @@ public class FavoriteService {
     // 즐겨찾기가 이미 존재하는 경우 삭제하고, 그렇지 않으면 새로 추가
     if (existing.isPresent()) {
       favoriteRepository.delete(existing.get());
-      feedbackService.handle(userId, postId, UserActionType.FAVORITE_REMOVE);
+      if (expectedType == PostType.EVENT) {
+        feedbackService.handle(userId, postId, UserActionType.FAVORITE_REMOVE);
+      }
+
       post.decrementFavoriteCount();
     } else {
       Favorite favorite = Favorite.builder()
@@ -61,7 +64,10 @@ public class FavoriteService {
           .post(post)
           .build();
       favoriteRepository.save(favorite);
-      feedbackService.handle(userId, postId, UserActionType.FAVORITE_ADD);
+      if (expectedType == PostType.EVENT) {
+        feedbackService.handle(userId, postId, UserActionType.FAVORITE_ADD);
+      }
+
       post.incrementFavoriteCount();
     }
     return FavoriteResponse.builder()

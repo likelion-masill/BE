@@ -1,6 +1,7 @@
 package project.masil.community.service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -82,8 +83,11 @@ public class EventPostService {
   }
 
   /**
-   * 이벤트 생성 로직
-   *
+   * 이벤트 생성
+   * - 이미지 필수 검증
+   * - 지역/유저 유효성 검증
+   * - 이미지 업로드 (S3)
+   * - AI 요약 생성 (실패 시 무시)
    * @param userId
    * @param request
    * @param images
@@ -193,15 +197,21 @@ public class EventPostService {
     if (userId != null) {
       isLiked = favoriteRepository.existsByUserIdAndPostId(userId, eventPost.getId());
     }
-    // 사용자 행동 피드백 반영
-    feedbackService.handle(userId, eventPostId, UserActionType.VIEW);
+    // 사용자 행동 피드백 반영 (비로그인 보호)
+    if (userId != null) {
+      feedbackService.handle(userId, eventPostId, UserActionType.VIEW);
+    }
 
     return converter.toResponse(eventPost, isLiked, userId.equals(eventPost.getUser().getId()),
         RegionConverter.toRegionResponse(eventPost.getRegion()));
   }
 
   /**
-   * 지역ID로 이벤트 전체 리스트 조회 + 로그인한 사용자가 좋아요 눌렀는지까지 한 번에 계산
+   * [지역ID + 전체 리스트 조회]
+   * - 지역ID는 필수
+   * - isUp=true는 상단 랜덤 노출(시드 기반 → 한 시간 동안 고정)
+   * - 나머지는 최신순
+   * - 로그인 사용자 좋아요 여부 포함
    *
    * @param pageable
    * @param userId
@@ -209,29 +219,17 @@ public class EventPostService {
    */
   @Transactional(readOnly = true)
   public Page<EventPostResponse> getEventAll(Long regionId, Pageable pageable, Long userId) {
-    Page<EventPost> page = eventPostRepository.findAllByRegionIdOrderByCreatedAtDesc(regionId,
-        pageable);
+    // 시드 랜덤 정렬 쿼리 적용
+    long seed = hourlySeed();
 
-    // 1) 비로그인(=userId 없음)이라면 isLiked는 전부 false로 내려보냄
-    if (userId == null) {
-      return page.map(
-          post -> converter.toResponse(post, false, userId.equals(post.getUser().getId()),
-              RegionConverter.toRegionResponse(post.getRegion())));
-    }
+    Page<EventPost> page = eventPostRepository.findSeededUpFirst(regionId, seed, pageable);
 
-    // 2) 현재 페이지에 담긴 이벤트들의 ID만 뽑아옴 (배치 처리를 위한 준비)
-    List<Long> postIds = page.getContent().stream().map(EventPost::getId).toList();
-
-    // 3) Favorite 테이블에서 "userId가 좋아요한 postId들"만 한 번에 조회 (IN 절 사용)
-    Set<Long> likedIds = favoriteRepository.findLikedPostIds(userId, postIds);
-
-    // 4) 각 게시글이 likedIds에 포함되어 있으면 isLiked=true로 DTO 변환 => 해당 이벤트 게시글Id가 내가 좋아요한 이벤트 게시글 ID(likedIds)인지 확인
-    return page.map(post -> converter.toResponse(post, likedIds.contains(post.getId()),
-        userId.equals(post.getUser().getId()), RegionConverter.toRegionResponse(post.getRegion())));
+    return mapToResponse(page, userId);
   }
 
   /**
-   * 지역ID + 이벤트 타입으로 이벤트 게시글 리스트 조회 + 로그인한 사용자가 좋아요 눌렀는지까지 한 번에 계산
+   * [지역ID + 이벤트 타입 리스트 조회]
+   * - 정렬 정책은 전체 리스트와 동일
    *
    * @param regionId
    * @param eventType
@@ -241,27 +239,15 @@ public class EventPostService {
   @Transactional(readOnly = true)
   public Page<EventPostResponse> getEventTypeList(Long regionId, EventType eventType,
       Pageable pageable, Long userId) {
-    Page<EventPost> page = eventPostRepository.findByRegionIdAndEventType(regionId, eventType,
-        pageable);
 
-    // 1) 비로그인(=userId 없음)이라면 isLiked는 전부 false로 내려보냄
-    if (userId == null) {
-      return page.map(
-          post -> converter.toResponse(post, false, userId.equals(post.getUser().getId()),
-              RegionConverter.toRegionResponse(post.getRegion())));
-    }
-
-    // 2) 현재 페이지에 담긴 이벤트들의 ID만 뽑아옴 (배치 처리를 위한 준비)
-    List<Long> postIds = page.getContent().stream().map(EventPost::getId).toList();
-
-    // 3) Favorite 테이블에서 "userId가 좋아요한 postId들"만 한 번에 조회 (IN 절 사용)
-    Set<Long> likedIds = favoriteRepository.findLikedPostIds(userId, postIds);
-
-    // 4) 각 게시글이 likedIds에 포함되어 있으면 isLiked=true로 DTO 변환 => 해당 이벤트 게시글Id가 내가 좋아요한 이벤트 게시글 ID(likedIds)인지 확인
-    return page.map(post -> converter.toResponse(post, likedIds.contains(post.getId()),
-        userId.equals(post.getUser().getId()), RegionConverter.toRegionResponse(post.getRegion())));
+    // 시드 랜덤 정렬 쿼리 적용
+    long seed = hourlySeed();
+    Page<EventPost> page = eventPostRepository.findSeededUpFirstByType(regionId,
+        eventType, seed, pageable);
+    return mapToResponse(page, userId);
 
   }
+
 
   /**
    * 이벤트 수정
@@ -329,6 +315,129 @@ public class EventPostService {
         .orElseThrow(() -> new CustomException(EventErrorCode.EVENT_NOT_FOUND));
     eventPostRepository.delete(eventPost);
     return true;
+  }
+
+  /**
+   * 이벤트 UP 시작 기능
+   * - 입력한 기간 만큼 이벤트 UP 활성화
+   * @param eventId
+   * @param userId
+   * @param days
+   * @return
+   */
+  @Transactional
+  public EventPostResponse startUp(Long eventId, Long userId, int days) {
+    EventPost post = eventPostRepository.findById(eventId)
+        .orElseThrow(() -> new CustomException(EventErrorCode.EVENT_NOT_FOUND));
+
+    /**
+     * 만료되어 있거나 현재 OFF면 새로 시작, 진행 중이면 기간 연장 정책 택1
+     */
+    post.refreshUpStatusByNow();
+    if (post.isUp()) {
+      // 진행 중 → 연장 정책 (원하면 아래 주석 해제)
+//      post.setUpExpiresAt(post.getUpExpiresAt().plusDays(days));
+    } else {
+      post.startUpForDays(days);
+    }
+
+    return converter.toResponse(
+        post,
+        false,
+        userId != null && userId.equals(post.getUser().getId()),
+        RegionConverter.toRegionResponse(post.getRegion())
+    );
+
+
+  }
+
+  /**
+   * 이벤트 UP 중지 기능
+   * @param eventId
+   * @param userId
+   * @return
+   */
+  @Transactional
+  public EventPostResponse stopUp(Long eventId, Long userId) {
+    EventPost post = eventPostRepository.findById(eventId)
+        .orElseThrow(() -> new CustomException(EventErrorCode.EVENT_NOT_FOUND));
+    post.stopUp();
+    return converter.toResponse(
+        post,
+        false,
+        userId != null && userId.equals(post.getUser().getId()),
+        RegionConverter.toRegionResponse(post.getRegion())
+    );
+  }
+
+  /**
+   * 이벤트 UP 상태 조회
+   * @param eventId
+   * @param userId
+   * @return
+   */
+  @Transactional(readOnly = true)
+  public EventPostResponse getEventStatus(Long eventId, Long userId) {
+    EventPost post = eventPostRepository.findById(eventId)
+        .orElseThrow(() -> new CustomException(EventErrorCode.EVENT_NOT_FOUND));
+    post.refreshUpStatusByNow(); // 조회시 만료된 경우 자동 해제
+
+    return converter.toResponse(
+        post,
+        false,
+        userId != null && userId.equals(post.getUser().getId()),
+        RegionConverter.toRegionResponse(post.getRegion()));
+
+  }
+
+
+  // 시간 단위(yyyyMMddHH)로 시드 고정 → 한 시간 동안은 UP끼리의 순서가 유지됨
+  private long hourlySeed() {
+    String time = LocalDateTime.now()
+        .format(DateTimeFormatter.ofPattern("yyyyMMddHH"));
+    return Long.parseLong(time);
+  }
+
+  /**
+   * 좋아요 / 작성자 여부까지 한 번에 매핑
+   */
+  private Page<EventPostResponse> mapToResponse(Page<EventPost> page, Long userId) {
+
+    // 비로그인: 전부 false (NPE 절대 발생 X)
+    if (userId == null) {
+      return page.map(post -> converter.toResponse(
+          post,
+          /* isLiked */ false,
+          /* isAuthor */ false,
+          RegionConverter.toRegionResponse(post.getRegion())
+      ));
+    }
+
+    /**
+     * 로그인: 현재 페이지 게시글 ID 수집 → 좋아요 세트 조회
+     */
+    // (1) 현재 조회된 페이지(Page<EventPost>) 안에 있는 게시글들을 꺼내서,
+    //     각각의 게시글 ID만 뽑아서 List<Long> 형태로 모은다.
+    //     예: [101, 102, 103, 104]
+    List<Long> postIds = page.getContent()
+        .stream()
+        .map(EventPost::getId)
+        .toList();
+
+    // (2) 내가 로그인한 사용자(userId)가 "좋아요"를 누른 게시글들 중에서,
+    //     방금 뽑은 postIds(= 이번 페이지 게시글들)에 해당하는 것만 한 번에 조회한다.
+    //     결과는 Set<Long> 형태(중복 없음).
+    //     예: {102, 104} → 이 페이지에서 내가 좋아요 누른 건 102번, 104번 게시글
+    Set<Long> likedIds = favoriteRepository.findLikedPostIds(userId, postIds);
+
+    return page.map(post -> converter.toResponse(
+        post,
+        likedIds.contains(post.getId()),
+        userId.equals(post.getUser().getId()), //userId null 아님
+        RegionConverter.toRegionResponse(post.getRegion())
+    ));
+
+
   }
 
 
