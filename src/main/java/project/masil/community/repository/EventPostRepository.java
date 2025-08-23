@@ -1,13 +1,12 @@
 package project.masil.community.repository;
 
-import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -85,11 +84,8 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
   List<Long> findAllIds();
 
   /**
-   * [전체 조회] regionId 기준
-   * - 활성 UP: isUp=true AND (upExpiresAt IS NULL OR upExpiresAt > NOW)
-   * - 1순위: 활성 UP 우선
-   * - 2순위: 활성 UP 끼리는 seed 기반 랜덤 (CRC32 사용)
-   * - 3순위: 나머지 최신순(createdAt desc, id desc)
+   * [전체 조회] regionId 기준 - 활성 UP: isUp=true AND (upExpiresAt IS NULL OR upExpiresAt > NOW) - 1순위: 활성
+   * UP 우선 - 2순위: 활성 UP 끼리는 seed 기반 랜덤 (CRC32 사용) - 3순위: 나머지 최신순(createdAt desc, id desc)
    */
   @EntityGraph(attributePaths = {"user", "eventImages"})
   @Query("""
@@ -112,8 +108,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
       Pageable pageable);
 
   /**
-   * [타입별 조회] regionId + eventType
-   * - 정렬 로직 동일
+   * [타입별 조회] regionId + eventType - 정렬 로직 동일
    */
   @EntityGraph(attributePaths = {"user", "eventImages"})
   @Query("""
@@ -137,5 +132,8 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
       @Param("seed") long seed,
       Pageable pageable);
 
-
+  // 요약 업데이트용 레포지토리 메서드
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("update EventPost e set e.summary = :summary, e.updatedAt = CURRENT_TIMESTAMP where e.id = :id")
+  int updateSummary(@Param("id") Long id, @Param("summary") String summary);
 }

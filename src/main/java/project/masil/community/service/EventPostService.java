@@ -3,15 +3,19 @@ package project.masil.community.service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import project.masil.community.converter.EventPostConverter;
 import project.masil.community.converter.RegionConverter;
@@ -21,6 +25,7 @@ import project.masil.community.entity.EventPost;
 import project.masil.community.entity.Region;
 import project.masil.community.enums.EventType;
 import project.masil.community.enums.PostType;
+import project.masil.community.event.EventCreatedEvent;
 import project.masil.community.exception.EventErrorCode;
 import project.masil.community.exception.PostErrorCode;
 import project.masil.community.exception.RegionErrorCode;
@@ -34,8 +39,6 @@ import project.masil.global.config.S3.Uuid;
 import project.masil.global.config.S3.UuidRepository;
 import project.masil.global.exception.CustomException;
 import project.masil.infrastructure.client.ai.AiClient;
-import project.masil.infrastructure.client.ai.dto.AiSummarizeRequest;
-import project.masil.infrastructure.client.ai.dto.AiSummarizeResponse;
 import project.masil.user.entity.User;
 import project.masil.user.entity.UserActionType;
 import project.masil.user.exception.UserErrorCode;
@@ -46,6 +49,7 @@ import project.masil.user.repository.UserRepository;
 @Slf4j
 public class EventPostService {
 
+  private final ApplicationEventPublisher publisher;
 
   private final EventPostRepository eventPostRepository;
   private final RegionRepository regionRepository;
@@ -67,6 +71,14 @@ public class EventPostService {
 
   private final FeedbackService feedbackService;
 
+  private static final int LEN_THRESHOLD = 50;
+
+  private static int effectiveLen(String s) {
+    if (s == null) {
+      return 0;
+    }
+    return s.replaceAll("\\s+", "").length(); // 공백/개행 제거 후 길이
+  }
 
   /**
    * 이벤트 작성자 userId를 반환 - 채팅 서비스에서 "이벤트 컨텍스트로 채팅 시작" 시 대상 사용자 검증 용도 - 존재하지 않으면 예외
@@ -83,11 +95,8 @@ public class EventPostService {
   }
 
   /**
-   * 이벤트 생성
-   * - 이미지 필수 검증
-   * - 지역/유저 유효성 검증
-   * - 이미지 업로드 (S3)
-   * - AI 요약 생성 (실패 시 무시)
+   * 이벤트 생성 - 이미지 필수 검증 - 지역/유저 유효성 검증 - 이미지 업로드 (S3) - AI 요약 생성 (실패 시 무시)
+   *
    * @param userId
    * @param request
    * @param images
@@ -128,29 +137,6 @@ public class EventPostService {
         })
         .collect(Collectors.toList());
 
-    String summary = null;
-    try {
-      AiSummarizeRequest aiReq =
-          new AiSummarizeRequest(
-              request.getContent(),   // 원문
-              5,                      // top_k
-              10,                     // min_len
-              0.3,                    // temperature
-              300                     // max_output_tokens
-          );
-
-      AiSummarizeResponse response = aiClient.summarize(aiReq);
-
-      if (response != null && "success".equalsIgnoreCase(response.getStatus())
-          && response.getData() != null) {
-        String data = response.getData().trim();
-        summary = data;
-      }
-    } catch (Exception e) {
-      // 요약 실패는 전체 트랜잭션 실패로 볼 필요 없으면 여기서만 로깅하고 넘어가
-      log.warn("요약 생성 실패", e);
-    }
-
     EventPost eventPost = EventPost.builder()
         .postType(PostType.EVENT)
         .user(user)
@@ -162,7 +148,7 @@ public class EventPostService {
         .content(request.getContent())
         .startAt(request.getStartAt())
         .endAt(request.getEndAt())
-        .summary(summary)
+        .summary(null)
         .viewCount(0) //생성할때 0
         .favoriteCount(0)
         .commentCount(0)
@@ -171,9 +157,20 @@ public class EventPostService {
 
     EventPost savedEventPost = eventPostRepository.save(eventPost);
 
-    embeddingPipelineService.upsertPost(savedEventPost.getId(), region.getId(),
-        savedEventPost.getTitle(),
-        savedEventPost.getContent());
+    int bodyLen = effectiveLen(savedEventPost.getContent());
+
+    // (비동기) AI 요약 생성 및 파이썬 서버 임베딩 upsert
+    if (bodyLen >= LEN_THRESHOLD) {
+      publisher.publishEvent(new EventCreatedEvent(
+          savedEventPost.getId(),
+          region.getId(),
+          savedEventPost.getTitle(),
+          savedEventPost.getContent()
+      ));
+    } else {
+      log.info("[AI] (create) skip postId={} (bodyLen={} < {})",
+          savedEventPost.getId(), bodyLen, LEN_THRESHOLD);
+    }
 
     return converter.toResponse(savedEventPost, false,
         userId.equals(savedEventPost.getUser().getId()), RegionConverter.toRegionResponse(region));
@@ -206,12 +203,15 @@ public class EventPostService {
         RegionConverter.toRegionResponse(eventPost.getRegion()));
   }
 
+  public String getEventSummary(Long eventPostId) {
+    EventPost eventPost = eventPostRepository.findById(eventPostId)
+        .orElseThrow(() -> new CustomException(EventErrorCode.EVENT_NOT_FOUND));
+    return eventPost.getSummary();
+  }
+
   /**
-   * [지역ID + 전체 리스트 조회]
-   * - 지역ID는 필수
-   * - isUp=true는 상단 랜덤 노출(시드 기반 → 한 시간 동안 고정)
-   * - 나머지는 최신순
-   * - 로그인 사용자 좋아요 여부 포함
+   * [지역ID + 전체 리스트 조회] - 지역ID는 필수 - isUp=true는 상단 랜덤 노출(시드 기반 → 한 시간 동안 고정) - 나머지는 최신순 - 로그인 사용자
+   * 좋아요 여부 포함
    *
    * @param pageable
    * @param userId
@@ -228,8 +228,7 @@ public class EventPostService {
   }
 
   /**
-   * [지역ID + 이벤트 타입 리스트 조회]
-   * - 정렬 정책은 전체 리스트와 동일
+   * [지역ID + 이벤트 타입 리스트 조회] - 정렬 정책은 전체 리스트와 동일
    *
    * @param regionId
    * @param eventType
@@ -278,6 +277,11 @@ public class EventPostService {
     Region region = regionRepository.findById(request.getRegionId())
         .orElseThrow(() -> new CustomException(RegionErrorCode.REGION_NOT_FOUND));
 
+    // 변경 감지용 기존 값 백업
+    String oldTitle = eventPost.getTitle();
+    String oldContent = eventPost.getContent();
+    Long oldRegionId = eventPost.getRegion().getId();
+
     LocalDateTime startAtKst = request.getStartAt();
     LocalDateTime endAtKst = request.getEndAt();
 
@@ -304,22 +308,76 @@ public class EventPostService {
       eventPost.addImages(newUrls);
     }
 
+    // 임베딩 개싱 필요 여부 판단
+    boolean titleChanged = !Objects.equals(oldTitle, eventPost.getTitle());
+    boolean contentChanged = !Objects.equals(oldContent, eventPost.getContent());
+    boolean regionChanged = !Objects.equals(oldRegionId, region.getId());
+    boolean needEmbeddingUpdate = titleChanged || contentChanged || regionChanged;
+
+    int bodyLen = effectiveLen(eventPost.getContent());
+
+    long postId = eventPost.getId();
+    long regionId = region.getId();
+    String title = eventPost.getTitle();
+    String content = eventPost.getContent();
+
+    // 트랜잭션 커밋 이후 외부 반영
+    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+      @Override
+      public void afterCommit() {
+        try {
+          if (!needEmbeddingUpdate) {
+            // 변경 없으면 아무것도 안 함
+            return;
+          }
+          if (bodyLen >= LEN_THRESHOLD) {
+            // 업서트: DB(LONGBLOB) 저장 + FAISS upsert (EmbeddingPipelineService가 다 함)
+            embeddingPipelineService.upsertPost(postId, regionId, title, content);
+            log.info("[AI] (update) upsert postId={} (bodyLen={})", postId, bodyLen);
+          } else {
+            // 길이 짧으면 검색 품질 위해 제거(정책 선택 가능)
+            embeddingPipelineService.removePost(postId);
+            log.info("[AI] (update) remove postId={} (bodyLen={} < {})", postId, bodyLen,
+                LEN_THRESHOLD);
+          }
+        } catch (Exception e) {
+          log.error("임베딩/FAISS 업데이트 실패 postId={}", postId, e);
+        }
+      }
+    });
+
     boolean isLiked = favoriteRepository.existsByUserIdAndPostId(userId, eventPost.getId());
-    // @Transactional이 있어서 변경감지로 저장되므로 save() 불필요. 항상 마지막에 반환
-    return converter.toResponse(eventPost, isLiked, userId.equals(eventPost.getUser().getId()),
+    return converter.toResponse(eventPost, isLiked, true,
         RegionConverter.toRegionResponse(region));
   }
 
+  @Transactional
   public Boolean deleteEvent(Long eventPostId) {
     EventPost eventPost = eventPostRepository.findById(eventPostId)
         .orElseThrow(() -> new CustomException(EventErrorCode.EVENT_NOT_FOUND));
+
+    // 1) 우선 도메인 삭제 (DB 트랜잭션 안)
     eventPostRepository.delete(eventPost);
+
+    // 2) 커밋 이후에 외부(FAISS) 반영
+    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+      @Override
+      public void afterCommit() {
+        try {
+          embeddingPipelineService.removePost(eventPostId);
+        } catch (Exception e) {
+          // 외부 연동 실패
+          log.error("FAISS remove 연동 실패 postId={}", eventPostId, e);
+        }
+      }
+    });
+
     return true;
   }
 
   /**
-   * 이벤트 UP 시작 기능
-   * - 입력한 기간 만큼 이벤트 UP 활성화
+   * 이벤트 UP 시작 기능 - 입력한 기간 만큼 이벤트 UP 활성화
+   *
    * @param eventId
    * @param userId
    * @param days
@@ -353,6 +411,7 @@ public class EventPostService {
 
   /**
    * 이벤트 UP 중지 기능
+   *
    * @param eventId
    * @param userId
    * @return
@@ -372,6 +431,7 @@ public class EventPostService {
 
   /**
    * 이벤트 UP 상태 조회
+   *
    * @param eventId
    * @param userId
    * @return

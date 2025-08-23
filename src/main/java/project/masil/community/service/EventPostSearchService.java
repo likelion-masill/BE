@@ -43,7 +43,6 @@ import project.masil.user.service.SearchLogService;
 public class EventPostSearchService {
 
   private final EventPostRepository eventPostRepository;
-  private final EventPostRepository repo;
   private final KoreanTimeParser koreanTimeParser;
   private final EventTypeParser eventTypeParser;
   private final RegionParser regionParser;
@@ -72,7 +71,8 @@ public class EventPostSearchService {
     int size = pageable.getPageSize();
     int offset = (int) pageable.getOffset();
 
-    List<Object[]> rows = repo.searchPostIdsByKeywordInRegion(keyword, regionId, size, offset);
+    List<Object[]> rows = eventPostRepository.searchPostIdsByKeywordInRegion(keyword, regionId,
+        size, offset);
     List<Long> ids = rows.stream()
         .map(r -> ((Number) r[0]).longValue())
         .toList();
@@ -84,8 +84,8 @@ public class EventPostSearchService {
         .map(String::valueOf)
         .collect(Collectors.joining(","));
 
-    List<EventPost> posts = repo.findAllByIdInOrder(ids, orderCsv);
-    long total = repo.countByKeywordInRegion(keyword, regionId);
+    List<EventPost> posts = eventPostRepository.findAllByIdInOrder(ids, orderCsv);
+    long total = eventPostRepository.countByKeywordInRegion(keyword, regionId);
 
     List<EventPostResponse> content = posts.stream()
         .map(post -> {
@@ -114,7 +114,7 @@ public class EventPostSearchService {
     Sort sort = Sort.by(Sort.Direction.DESC, "startAt");
     Pageable pageable = PageRequest.of(0, Math.max(1, limit), sort);
 
-    return repo.findAll(spec, pageable)
+    return eventPostRepository.findAll(spec, pageable)
         .stream()
         .map(EventPost::getId)
         .toList();
@@ -164,7 +164,7 @@ public class EventPostSearchService {
     return posts.stream()
         .map(post -> {
           boolean isLiked = favoriteRepository.existsByUserIdAndPostId(
-              post.getUser().getId(), post.getId());
+              userId, post.getId());
           boolean isMine = post.getUser().getId().equals(userId);
           return converter.toResponse(
               post,

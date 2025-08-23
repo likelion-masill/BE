@@ -1,5 +1,7 @@
 package project.masil.mypage.converter;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
 import project.masil.community.dto.response.EventImageResponse;
@@ -12,15 +14,22 @@ import project.masil.mypage.exception.MyPageErrorCode;
 
 public class MyPageConverter {
 
-  public static PostResponse toPostResponse(Post post) {
+  public static PostResponse toPostResponse(Post post, boolean isBusinessVerified,
+      boolean isLiked) {
     return switch (post.getPostType()) {
-      case EVENT -> toPostResponse((EventPost) post);
-      case CLUB -> toPostResponse((ClubPost) post);
+      case EVENT -> toPostResponse((EventPost) post, isBusinessVerified, isLiked);
+      case CLUB -> toPostResponse((ClubPost) post, isBusinessVerified, isLiked);
       default -> throw new CustomException(MyPageErrorCode.UNKNOWN_POST_TYPE);
     };
   }
 
-  private static PostResponse toPostResponse(EventPost post) {
+  private static PostResponse toPostResponse(EventPost post, boolean isBusinessVerified,
+      boolean isLiked) {
+    long remainingSeconds = 0L;
+    if (post.isUp() && post.getUpExpiresAt() != null) {
+      remainingSeconds = Math.max(0L,                      // 만료 시 음수 방지
+          Duration.between(LocalDateTime.now(), post.getUpExpiresAt()).getSeconds());
+    }
     return PostResponse.builder()
         .eventId(post.getId())
         .postType(post.getPostType())
@@ -39,10 +48,17 @@ public class MyPageConverter {
         .endAt(post.getEndAt())
         .favoriteCount(post.getFavoriteCount())
         .commentCount(post.getCommentCount())
+        .isBusinessVerified(isBusinessVerified)
+        .isLiked(isLiked)
+        .isUp(post.isUp())
+        .upStartedAt(post.getUpAt())
+        .upEndAt(post.getUpExpiresAt())
+        .upRemainingSeconds(remainingSeconds)
         .build();
   }
 
-  private static PostResponse toPostResponse(ClubPost post) {
+  private static PostResponse toPostResponse(ClubPost post, boolean isBusinessVerified,
+      boolean isLiked) {
     List<String> images = post.getEventPost().getEventImages();
     return PostResponse.builder()
         .eventId(post.getEventPost().getId())
@@ -63,6 +79,8 @@ public class MyPageConverter {
         .endAt(null)
         .favoriteCount(post.getFavoriteCount())
         .commentCount(post.getCommentCount())
+        .isBusinessVerified(isBusinessVerified)
+        .isLiked(isLiked)
         .build();
   }
 
