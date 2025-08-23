@@ -50,8 +50,7 @@ public class MyPageService {
         .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
     Page<Post> posts = postRepository.findByUserOrderByCreatedAtDesc(user, pageable);
 
-    List<Long> postIds = posts.getContent().stream()
-        .map(Post::getId)
+    List<Long> postIds = posts.getContent().stream().map(Post::getId)
         .toList();
 
     Set<Long> likedIds = postIds.isEmpty()
@@ -118,7 +117,7 @@ public class MyPageService {
 
       log.info("사업자 인증 응답 valid: {}", valid);
       if ("01".equals(valid)) {
-        user.verifyBusiness();
+        user.verifyBusiness(verifyRequest.getBusinessNumber());
         return;
       }
       throw new CustomException(MyPageErrorCode.OWNER_VERIFICATION_FAILED);
