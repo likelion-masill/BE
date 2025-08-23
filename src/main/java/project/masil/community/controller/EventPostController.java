@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import project.masil.community.dto.request.EventPostRequest;
 import project.masil.community.dto.response.EventPostResponse;
+import project.masil.community.enums.EventSort;
 import project.masil.community.enums.EventType;
 import project.masil.community.service.EventPostService;
 import project.masil.global.response.BaseResponse;
@@ -69,26 +70,24 @@ public class EventPostController {
     return ResponseEntity.ok(BaseResponse.success("이벤트 요약 조회 성공", summary));
   }
 
-  @Operation(summary = "이벤트 리스트 전체 조회", description = "전체 이벤트 리스트 조회")
+  @Operation(summary = "이벤트 리스트 전체 조회", description = "전체 이벤트 리스트 조회 (정렬: 최신순/댓글순/인기순(좋아요순)")
   @GetMapping("/all")
   public ResponseEntity<BaseResponse<Page<EventPostResponse>>> getAllEvents(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @RequestParam(defaultValue = "1") Long regionId, // ← 지역 ID를 받는 파라미터 추가
       @RequestParam(defaultValue = "1") int page,          // ← 1부터 받기
       @RequestParam(defaultValue = "20") int size,
-      @RequestParam(defaultValue = "createdAt") String sortBy,
-      @RequestParam(defaultValue = "desc") String sortDir
+      @RequestParam(defaultValue = "DATE")EventSort sort // 정렬 옵션 (기본 최신순)
   ) {
     int pageIndex = Math.max(0, page - 1);                 // ← 0 기반으로 변환
-    Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
-    Pageable pageable = PageRequest.of(pageIndex, size, sort);
+    Pageable pageable = PageRequest.of(pageIndex, size); // 정렬은 레포의 ORDER BY가 처리
 
     Page<EventPostResponse> response = eventPostService.getEventAll(regionId, pageable,
-        userDetails.getUser().getId());
+        userDetails.getUser().getId(), sort);
     return ResponseEntity.ok(BaseResponse.success("이벤트 리스트 조회 성공", response));
   }
 
-  @Operation(summary = "특정 이벤트 타입 리스트 조회", description = "특정 이벤트 타입의 이벤트 리스트 조회")
+  @Operation(summary = "특정 이벤트 타입 리스트 조회", description = "특정 이벤트 타입의 이벤트 리스트 조회 (정렬: 최신순/댓글순/인기순(좋아요순)")
   @GetMapping("/eventType/list")
   public ResponseEntity<BaseResponse<Page<EventPostResponse>>> getEventTypeList(
       @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -96,16 +95,14 @@ public class EventPostController {
       @RequestParam EventType eventType,
       @RequestParam(defaultValue = "1") int page,          // ← 1부터 받기
       @RequestParam(defaultValue = "20") int size,
-      @RequestParam(defaultValue = "createdAt") String sortBy,
-      @RequestParam(defaultValue = "desc") String sortDir
+      @RequestParam(defaultValue = "DATE") EventSort sort
   ) {
     // 페이지 번호를 0 기반으로 변환 (최소 0 보장)
     int pageIndex = Math.max(0, page - 1);
     // 정렬 방향 및 기준 설정
-    Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
-    Pageable pageable = PageRequest.of(pageIndex, size, sort);
+    Pageable pageable = PageRequest.of(pageIndex, size);
     Page<EventPostResponse> eventTypeList = eventPostService.getEventTypeList(regionId, eventType,
-        pageable, userDetails.getUser().getId());
+        pageable, userDetails.getUser().getId(), sort);
     return ResponseEntity.ok(BaseResponse.success("이벤트 카테고리별 리스트 조회 성공", eventTypeList));
 
   }
