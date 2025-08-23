@@ -164,6 +164,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
       SELECT e
       FROM EventPost e
       WHERE e.region.id = :regionId
+        AND e.endAt >= CURRENT_TIMESTAMP
       ORDER BY
         CASE
           WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)) THEN 0
@@ -191,6 +192,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
       FROM EventPost e
       WHERE e.region.id = :regionId
         AND e.eventType = :eventType
+        AND e.endAt >= CURRENT_TIMESTAMP
       ORDER BY
         CASE
           WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)) THEN 0
@@ -221,6 +223,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
     SELECT e
     FROM EventPost e
     WHERE e.region.id = :regionId
+      AND e.endAt >= CURRENT_TIMESTAMP
     ORDER BY
       CASE
         WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)) THEN 0
@@ -249,6 +252,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
     SELECT e
     FROM EventPost e
     WHERE e.region.id = :regionId
+      AND e.endAt >= CURRENT_TIMESTAMP
     ORDER BY
       CASE
         WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)) THEN 0
@@ -288,7 +292,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
   @Query("""
   SELECT e
   FROM EventPost e
-  WHERE e.region.id = :regionId AND e.eventType = :eventType
+  WHERE e.region.id = :regionId AND e.eventType = :eventType AND e.endAt >= CURRENT_TIMESTAMP
   ORDER BY
     CASE
       WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)) THEN 0
@@ -330,7 +334,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
   @Query("""
   SELECT e
   FROM EventPost e
-  WHERE e.region.id = :regionId AND e.eventType = :eventType
+  WHERE e.region.id = :regionId AND e.eventType = :eventType AND e.endAt >= CURRENT_TIMESTAMP
   ORDER BY
     CASE
       WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)) THEN 0
