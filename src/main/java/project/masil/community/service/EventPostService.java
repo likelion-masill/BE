@@ -71,9 +71,9 @@ public class EventPostService {
 
   private final FeedbackService feedbackService;
 
-  private static final int LEN_THRESHOLD = 50;
+  public static final int LEN_THRESHOLD = 50;
 
-  private static int effectiveLen(String s) {
+  public static int effectiveLen(String s) {
     if (s == null) {
       return 0;
     }
