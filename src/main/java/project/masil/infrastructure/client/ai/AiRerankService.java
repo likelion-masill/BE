@@ -13,7 +13,7 @@ import project.masil.infrastructure.client.ai.dto.FaissSearchResponse;
 @Service
 public class AiRerankService {
 
-  @Qualifier("aiWebClient")      // 파이썬 서버용 WebClient (baseUrl: http://ai:8000 같은)
+  @Qualifier("aiWebClient")      // 파이썬 서버용 WebClient
   private final WebClient ai;
 
   @Autowired
