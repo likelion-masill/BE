@@ -31,7 +31,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
         AND e.isUp = true
         AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)
         AND e.startAt <= :endOfDay
-        AND e.endAt >= :startOfDay
+        AND e.endAt >= CURRENT_TIMESTAMP
       ORDER BY FUNCTION('CRC32', CONCAT(CAST(e.id AS string), :seed))
       """)
   List<Long> findActiveAdPostIds(@Param("regionId") Long regionId,
@@ -50,6 +50,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
       WHERE e.region.id = :regionId
         AND e.eventType = :eventType
         AND e.isUp = true
+        AND e.endAt >= CURRENT_TIMESTAMP
         AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)
       ORDER BY FUNCTION('CRC32', CONCAT(CAST(e.id AS string), :seed))
       """)
@@ -66,6 +67,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
       FROM EventPost e
       WHERE e.region.id = :regionId
         AND e.isUp = true
+        AND e.endAt >= CURRENT_TIMESTAMP
         AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)
       ORDER BY FUNCTION('CRC32', CONCAT(CAST(e.id AS string), :seed))
       """)
@@ -89,6 +91,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
       FROM Post p
       JOIN events e ON e.id = p.id
       WHERE e.region_id = :regionId
+      AND e.endAt >= CURRENT_TIMESTAMP
         AND MATCH(p.title, p.content) AGAINST(:q IN NATURAL LANGUAGE MODE)
       ORDER BY score DESC, p.id DESC
       LIMIT :limit OFFSET :offset
@@ -105,6 +108,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
       FROM Post p
       JOIN events e ON e.id = p.id
       WHERE e.region_id = :regionId
+      AND e.endAt >= CURRENT_TIMESTAMP
         AND MATCH(p.title, p.content) AGAINST(:q IN NATURAL LANGUAGE MODE)
       """, nativeQuery = true)
   long countByKeywordInRegion(
@@ -116,6 +120,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
       SELECT e
       FROM EventPost e
       WHERE e.id IN :ids
+      AND e.endAt >= CURRENT_TIMESTAMP
       ORDER BY FUNCTION('FIND_IN_SET', e.id, :orderCsv)
       """)
   List<EventPost> findAllByIdInOrder(
@@ -127,6 +132,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
       SELECT *
       FROM event_post e
       WHERE e.id IN (:ids)
+      AND e.endAt >= CURRENT_TIMESTAMP
       ORDER BY e.created_at DESC, e.id DESC
       LIMIT :limit OFFSET :offset
       """, nativeQuery = true)
@@ -135,7 +141,7 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
       @Param("limit") int limit);
 
 
-  @Query("SELECT e.id FROM EventPost e")
+  @Query("SELECT e.id FROM EventPost e WHERE e.endAt >= CURRENT_TIMESTAMP")
   List<Long> findAllIds();
 
   /**
