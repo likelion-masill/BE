@@ -23,6 +23,7 @@ import project.masil.community.dto.request.EventPostRequest;
 import project.masil.community.dto.response.EventPostResponse;
 import project.masil.community.entity.EventPost;
 import project.masil.community.entity.Region;
+import project.masil.community.enums.EventSort;
 import project.masil.community.enums.EventType;
 import project.masil.community.enums.PostType;
 import project.masil.community.event.EventCreatedEvent;
@@ -218,11 +219,16 @@ public class EventPostService {
    * @return
    */
   @Transactional(readOnly = true)
-  public Page<EventPostResponse> getEventAll(Long regionId, Pageable pageable, Long userId) {
+  public Page<EventPostResponse> getEventAll(Long regionId, Pageable pageable, Long userId, EventSort sort) {
     // 시드 랜덤 정렬 쿼리 적용
     long seed = hourlySeed();
+    if (sort == null) sort = EventSort.DATE;
 
-    Page<EventPost> page = eventPostRepository.findSeededUpFirst(regionId, seed, pageable);
+    Page<EventPost> page = switch (sort) {
+      case COMMENTS -> eventPostRepository.findSeededUpFirstOrderByComments(regionId, seed, pageable);
+      case POPULARITY -> eventPostRepository.findSeededUpFirstOrderByPopularity(regionId, seed, pageable);
+      case DATE -> eventPostRepository.findSeededUpFirst(regionId, seed, pageable);
+    };
 
     return mapToResponse(page, userId);
   }
@@ -237,15 +243,26 @@ public class EventPostService {
    */
   @Transactional(readOnly = true)
   public Page<EventPostResponse> getEventTypeList(Long regionId, EventType eventType,
-      Pageable pageable, Long userId) {
+      Pageable pageable, Long userId, EventSort sort) {
 
     // 시드 랜덤 정렬 쿼리 적용
     long seed = hourlySeed();
-    Page<EventPost> page = eventPostRepository.findSeededUpFirstByType(regionId,
-        eventType, seed, pageable);
+    if (sort == null) sort = EventSort.DATE;
+
+    Page<EventPost> page = switch (sort) {
+      case COMMENTS -> eventPostRepository
+          .findSeededUpFirstByTypeOrderByComments(regionId, eventType, seed, pageable);
+      case POPULARITY -> eventPostRepository
+          .findSeededUpFirstByTypeOrderByPopularity(regionId, eventType, seed, pageable);
+      case DATE -> eventPostRepository
+          .findSeededUpFirstByType(regionId, eventType, seed, pageable);
+    };
+
     return mapToResponse(page, userId);
 
   }
+
+
 
 
   /**
