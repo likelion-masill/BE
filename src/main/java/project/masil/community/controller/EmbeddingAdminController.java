@@ -18,10 +18,10 @@ public class EmbeddingAdminController {
   private final EmbeddingBatchService embeddingBatchService;
 
 
-  @PostMapping("/process-missing")
-  @Operation(summary = "누락된 게시글 임베딩 처리", description = "PostEmbedding 테이블에 없는 EventPost들을 찾아서 임베딩을 생성합니다.")
+  @PostMapping("/all")
+  @Operation(summary = "게시글 임베딩 배치 처리", description = "모든 게시글에 대해 임베딩 처리를 수행합니다.")
   public ResponseEntity<BaseResponse<List<Long>>> processMissingEmbeddings() {
     List<Long> processed = embeddingBatchService.processMissingEmbeddings();
-    return ResponseEntity.ok(BaseResponse.success("누락된 임베딩 처리 완료", processed));
+    return ResponseEntity.ok(BaseResponse.success("게시글 임베딩 배치 처리 완료", processed));
   }
 }
