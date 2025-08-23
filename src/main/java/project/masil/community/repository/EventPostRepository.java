@@ -1,5 +1,6 @@
 package project.masil.community.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +17,60 @@ import project.masil.community.enums.EventType;
 @Repository
 public interface EventPostRepository extends JpaRepository<EventPost, Long>,
     JpaSpecificationExecutor<EventPost> {
+
+  /**
+   * 오늘 범위와 겹치는(기간 overlap) 광고(UP) 게시글 ID 조회 - 지역 필수, 이벤트 타입은 선택(Null 허용) - isUp=true AND
+   * (upExpiresAt IS NULL OR upExpiresAt > NOW) - [기간 겹침] e.startAt <= :endOfDay AND e.endAt >=
+   * :startOfDay - 시드 기반 난수 정렬
+   */
+  @Query("""
+      SELECT e.id
+      FROM EventPost e
+      WHERE e.region.id = :regionId
+        AND (:eventType IS NULL OR e.eventType = :eventType)
+        AND e.isUp = true
+        AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)
+        AND e.startAt <= :endOfDay
+        AND e.endAt >= :startOfDay
+      ORDER BY FUNCTION('CRC32', CONCAT(CAST(e.id AS string), :seed))
+      """)
+  List<Long> findActiveAdPostIds(@Param("regionId") Long regionId,
+      @Param("eventType") EventType eventType,   // null 허용
+      @Param("startOfDay") LocalDateTime startOfDay,
+      @Param("endOfDay") LocalDateTime endOfDay,
+      @Param("seed") long seed);
+
+  /**
+   * (today 아님) 특정 이벤트 타입의 광고(UP) 게시글 ID 조회 - 지역 + 이벤트 타입 고정 - isUp=true AND (upExpiresAt IS NULL OR
+   * upExpiresAt > NOW) - 시드 기반 난수 정렬
+   */
+  @Query("""
+      SELECT e.id
+      FROM EventPost e
+      WHERE e.region.id = :regionId
+        AND e.eventType = :eventType
+        AND e.isUp = true
+        AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)
+      ORDER BY FUNCTION('CRC32', CONCAT(CAST(e.id AS string), :seed))
+      """)
+  List<Long> findAdPostIdsByType(@Param("regionId") Long regionId,
+      @Param("eventType") EventType eventType,
+      @Param("seed") long seed);
+
+  /**
+   * (today 아님) 모든 타입 대상 광고(UP) 게시글 ID 조회 - 지역만 고정 - isUp=true AND (upExpiresAt IS NULL OR
+   * upExpiresAt > NOW) - 시드 기반 난수 정렬
+   */
+  @Query("""
+      SELECT e.id
+      FROM EventPost e
+      WHERE e.region.id = :regionId
+        AND e.isUp = true
+        AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)
+      ORDER BY FUNCTION('CRC32', CONCAT(CAST(e.id AS string), :seed))
+      """)
+  List<Long> findAdPostIds(@Param("regionId") Long regionId,
+      @Param("seed") long seed);
 
   //UP 게시물 상단 노출 우선 정렬을 위해 기존 정렬 메서드는 사용 X
 //  /**
