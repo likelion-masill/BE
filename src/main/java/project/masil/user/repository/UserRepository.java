@@ -19,4 +19,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
    * @return 존재하면 true, 아니면 false
    */
   boolean existsByUsername(String username);
+
+  boolean existsByBusinessNumber(String businessNumber);
 }

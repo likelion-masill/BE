@@ -73,6 +73,9 @@ public class User extends BaseTimeEntity {
   @ColumnDefault("0")
   private boolean businessVerified = false;
 
+  @Column(unique = true)
+  private String businessNumber;
+
   @Setter
   @Column
   private String profileImageUrl;
@@ -88,8 +91,9 @@ public class User extends BaseTimeEntity {
     this.refreshToken = refreshToken;
   }
 
-  public void verifyBusiness() {
+  public void verifyBusiness(String businessNumber) {
     this.businessVerified = true;
+    this.businessNumber = businessNumber;
   }
 
   public void updateRegion(Region region) {
