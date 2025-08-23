@@ -34,6 +34,11 @@ public class FeedbackService {
   private static final float ETA = 0.1f; // 기본 학습률
 
   public void handle(long userId, long postId, UserActionType action) {
+    // embedding 값 존재 여부 확인
+    if (!postEmbeddingRepository.existsByPostId(postId)) {
+      return;
+    }
+
     // 1) 행동 로그 기록
     UserEventLog log = new UserEventLog();
     log.setUserId(userId);

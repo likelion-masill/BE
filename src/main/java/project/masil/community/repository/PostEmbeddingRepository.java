@@ -49,4 +49,6 @@ public interface PostEmbeddingRepository extends JpaRepository<PostEmbedding, Lo
 
   @Query("SELECT p.postId FROM PostEmbedding p")
   List<Long> findAllIds();
+
+  boolean existsByPostId(Long postId);
 }
