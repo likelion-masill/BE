@@ -1,5 +1,7 @@
 package project.masil.mypage.converter;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
 import project.masil.community.dto.response.EventImageResponse;
@@ -23,6 +25,11 @@ public class MyPageConverter {
 
   private static PostResponse toPostResponse(EventPost post, boolean isBusinessVerified,
       boolean isLiked) {
+    long remainingSeconds = 0L;
+    if (post.isUp() && post.getUpExpiresAt() != null) {
+      remainingSeconds = Math.max(0L,                      // 만료 시 음수 방지
+          Duration.between(LocalDateTime.now(), post.getUpExpiresAt()).getSeconds());
+    }
     return PostResponse.builder()
         .eventId(post.getId())
         .postType(post.getPostType())
@@ -43,6 +50,10 @@ public class MyPageConverter {
         .commentCount(post.getCommentCount())
         .isBusinessVerified(isBusinessVerified)
         .isLiked(isLiked)
+        .isUp(post.isUp())
+        .upStartedAt(post.getUpAt())
+        .upEndAt(post.getUpExpiresAt())
+        .upRemainingSeconds(remainingSeconds)
         .build();
   }
 
