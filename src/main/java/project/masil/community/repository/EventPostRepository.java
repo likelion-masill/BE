@@ -357,6 +357,102 @@ public interface EventPostRepository extends JpaRepository<EventPost, Long>,
       @Param("seed") long seed,
       Pageable pageable);
 
+  /**
+   * 오늘의 이벤트 리스트 조회 (전체/최신순 기본)
+   *
+   *
+   * AND e.startAt <= :endOfDay
+   * AND e.endAt   >= :startOfDay
+   * 예시)
+   * 이벤트: 8/24 10:00 ~ 8/26 18:00
+   * 오늘: 8/25 00:00 ~ 8/25 23:59
+   * ->이벤트 시작(8/24 10:00) ≤ 오늘 끝(8/25 23:59)
+   * ->이벤트 끝(8/26 18:00) ≥ 오늘 시작(8/25 00:00)
+   */
+  @EntityGraph(attributePaths = {"user", "eventImages"})
+  @Query("""
+    SELECT e
+    FROM EventPost e
+    WHERE e.region.id = :regionId
+      AND e.startAt <= :endOfDay
+      AND e.endAt   >= :startOfDay
+    ORDER BY
+      CASE
+        WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)) THEN 0
+        ELSE 1
+      END,
+      CASE
+        WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP))
+          THEN FUNCTION('CRC32', CONCAT(CAST(e.id AS string), :seed))
+      END,
+      e.createdAt DESC, e.id DESC
+    """)
+  Page<EventPost> findTodaySeededUpFirst(
+      @Param("regionId") Long regionId,
+      @Param("startOfDay") LocalDateTime startOfDay,
+      @Param("endOfDay") LocalDateTime endOfDay,
+      @Param("seed") long seed,
+      Pageable pageable
+  );
+
+  /**
+   * 오늘의 이벤트 리스트 조회 (전체/댓글순)
+   */
+  @EntityGraph(attributePaths = {"user", "eventImages"})
+  @Query("""
+  SELECT e
+  FROM EventPost e
+  WHERE e.region.id = :regionId
+    AND e.startAt <= :endOfDay
+    AND e.endAt   >= :startOfDay
+  ORDER BY
+    CASE
+      WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)) THEN 0
+      ELSE 1
+    END,
+    CASE
+      WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP))
+        THEN FUNCTION('CRC32', CONCAT(CAST(e.id AS string), :seed))
+    END,
+    e.commentCount DESC, e.id DESC
+  """)
+  Page<EventPost> findTodaySeededUpFirstOrderByComments(
+      @Param("regionId") Long regionId,
+      @Param("startOfDay") LocalDateTime startOfDay,
+      @Param("endOfDay") LocalDateTime endOfDay,
+      @Param("seed") long seed,
+      Pageable pageable
+  );
+
+  /**
+   * 오늘의 이벤트 리스트 조회 (전체/인기순=좋아요순)
+   */
+  @EntityGraph(attributePaths = {"user", "eventImages"})
+  @Query("""
+  SELECT e
+  FROM EventPost e
+  WHERE e.region.id = :regionId
+    AND e.startAt <= :endOfDay
+    AND e.endAt   >= :startOfDay
+  ORDER BY
+    CASE
+      WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP)) THEN 0
+      ELSE 1
+    END,
+    CASE
+      WHEN (e.isUp = true AND (e.upExpiresAt IS NULL OR e.upExpiresAt > CURRENT_TIMESTAMP))
+        THEN FUNCTION('CRC32', CONCAT(CAST(e.id AS string), :seed))
+    END,
+    e.favoriteCount DESC, e.id DESC
+  """)
+  Page<EventPost> findTodaySeededUpFirstOrderByPopularity(
+      @Param("regionId") Long regionId,
+      @Param("startOfDay") LocalDateTime startOfDay,
+      @Param("endOfDay") LocalDateTime endOfDay,
+      @Param("seed") long seed,
+      Pageable pageable
+  );
+
 
 
   // 요약 업데이트용 레포지토리 메서드

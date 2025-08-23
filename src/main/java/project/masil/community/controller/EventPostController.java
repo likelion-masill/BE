@@ -1,5 +1,6 @@
 package project.masil.community.controller;
 
+import com.amazonaws.Response;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -105,6 +106,23 @@ public class EventPostController {
         pageable, userDetails.getUser().getId(), sort);
     return ResponseEntity.ok(BaseResponse.success("이벤트 카테고리별 리스트 조회 성공", eventTypeList));
 
+  }
+
+  @Operation(summary = "오늘의 이벤트 리스트 조회(타입 없음)", description = "startAt~endAt가 오늘(Asia/Seoul)과 겹치는 이벤트만 조회. \n"
+      + "정렬: 활성 UP 최상단 → UP끼리 seed 랜덤 → 최신/댓글/인기 적용.")
+  @GetMapping("/today")
+  public ResponseEntity<BaseResponse<Page<EventPostResponse>>> getTodayEvents(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @RequestParam(defaultValue = "1") Long regionId,
+      @RequestParam(defaultValue = "DATE") EventSort sort,
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "20") int size
+  ) {
+    int pageIndex = Math.max(0, page - 1);
+    Pageable pageable = PageRequest.of(pageIndex, size);
+
+    Page<EventPostResponse> todayEvents = eventPostService.getTodayEvents(regionId, sort, pageable);
+    return ResponseEntity.ok(BaseResponse.success("오늘의 이벤트 리스트 조회 성공", todayEvents));
   }
 
   @Operation(summary = "이벤트 수정", description = "이벤트 페이지에서 이벤트 수정하기 눌렀을때 실행되는 API")
