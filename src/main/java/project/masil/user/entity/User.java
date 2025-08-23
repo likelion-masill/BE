@@ -73,7 +73,7 @@ public class User extends BaseTimeEntity {
   @ColumnDefault("0")
   private boolean businessVerified = false;
 
-  @Column(nullable = false, unique = true)
+  @Column(unique = true)
   private String businessNumber;
 
   @Setter
