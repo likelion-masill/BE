@@ -13,6 +13,7 @@ import project.masil.community.repository.PostEmbeddingRepository;
 import project.masil.global.config.props.OpenAIProps;
 import project.masil.global.util.EmbeddingCodec;
 import project.masil.infrastructure.client.ai.dto.CommonResponse;
+import project.masil.infrastructure.client.ai.dto.FaissRemoveResponse;
 import project.masil.infrastructure.client.ai.dto.FaissUpsertRequest;
 import project.masil.infrastructure.client.ai.dto.FaissUpsertResponse;
 import project.masil.infrastructure.client.openAi.dto.OpenAIEmbeddingRequest;
@@ -82,6 +83,36 @@ public class EmbeddingPipelineService {
     int total = res.getData().getNtotal();
     log.info("FAISS upsert 성공: upserted={}, ntotal={}", upserted, total);
 
+  }
+
+  public void removePost(long postId) {
+    // 1) DB 임베딩 삭제(있을 때만)
+    try {
+      if (postEmbeddingRepository.existsById(postId)) {
+        postEmbeddingRepository.deleteById(postId);
+      }
+    } catch (Exception e) {
+      // 여기서 실패하더라도 FAISS remove는 시도 (로그만 남김)
+      log.warn("PostEmbedding DB 삭제 실패 postId={}: {}", postId, e.getMessage(), e);
+    }
+
+    // 2) 파이썬 FAISS remove 호출
+    CommonResponse<FaissRemoveResponse> res = ai.delete()
+        .uri("/api/faiss/remove/{postId}", postId)
+        .retrieve()
+        .bodyToMono(new ParameterizedTypeReference<CommonResponse<FaissRemoveResponse>>() {
+        })
+        .block();
+
+    if (res == null || !"success".equalsIgnoreCase(res.getStatus())) {
+      throw new IllegalStateException(
+          "FAISS remove 실패: " + (res != null ? res.getMessage() : "응답 없음"));
+    }
+
+    FaissRemoveResponse data = res.getData();
+    log.info("FAISS remove 성공: removed={}, ntotal={}",
+        data != null ? data.getRemoved() : null,
+        data != null ? data.getNtotal() : null);
   }
 
   // ----- 내부: OpenAI 임베딩 -----

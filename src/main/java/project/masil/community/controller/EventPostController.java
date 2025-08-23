@@ -15,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -61,6 +60,13 @@ public class EventPostController {
     EventPostResponse response = eventPostService.getEventPost(eventId,
         userDetails.getUser().getId());
     return ResponseEntity.ok(BaseResponse.success("이벤트 단일 조회 성공", response));
+  }
+
+  @Operation(summary = "이벤트 요약 조회", description = "이벤트 요약 조회 API")
+  @GetMapping("/{eventId}/summary")
+  public ResponseEntity<BaseResponse<String>> getEventSummary(@PathVariable Long eventId) {
+    String summary = eventPostService.getEventSummary(eventId);
+    return ResponseEntity.ok(BaseResponse.success("이벤트 요약 조회 성공", summary));
   }
 
   @Operation(summary = "이벤트 리스트 전체 조회", description = "전체 이벤트 리스트 조회")
