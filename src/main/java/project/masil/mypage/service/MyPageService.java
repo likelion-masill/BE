@@ -95,6 +95,17 @@ public class MyPageService {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
+    // 1) 이미 유저가 인증 완료 상태인지 확인
+    if (user.getBusinessNumber() != null) {
+      throw new CustomException(MyPageErrorCode.OWNER_ALREADY_VERIFIED);
+    }
+
+    // 2) 동일한 사업자번호가 다른 유저에게 등록돼 있는지 확인
+    boolean exists = userRepository.existsByBusinessNumber(verifyRequest.getBusinessNumber());
+    if (exists) {
+      throw new CustomException(MyPageErrorCode.OWNER_ALREADY_REGISTERED);
+    }
+
     BusinessInfoPayload payload = new BusinessInfoPayload(
         verifyRequest.getBusinessNumber(),
         verifyRequest.getOpeningDate(),  // 예: "20250112" (YYYYMMDD)
