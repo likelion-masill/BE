@@ -106,7 +106,7 @@ public class RecommendationService {
     int needTop = (int) Math.min((long) (page + 1) * size, total);
 
     // FAISS 서브셋 검색 (Top needTop)
-    List<Long> rankedTopIds = aiRerankService.rerankSubset(candidateIds, userVec, needTop);
+    List<Long> rankedTopIds = aiRerankService.recommendByAI(candidateIds, userVec, needTop);
     if (rankedTopIds.isEmpty()) {
       return Page.empty(pageable);
     }

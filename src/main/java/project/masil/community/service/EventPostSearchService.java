@@ -149,7 +149,7 @@ public class EventPostSearchService {
     List<Float> q = embeddingPipelineService.requestEmbedding(query);
 
     // 5) 파이썬 서버에서 코사인 유사도 재랭킹 (topK=10)
-    List<Long> rankedIds = aiRerankService.rerankSubset(candidateIds, q, 10);
+    List<Long> rankedIds = aiRerankService.searchByAI(candidateIds, q, 10);
 
     if (rankedIds.isEmpty()) {
       return List.of();
