@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -42,16 +44,40 @@ public class RecommendationService {
 
   private final EventPostSearchService eventPostSearchService;
 
+  private long hourlySeed() {
+    String time = LocalDateTime.now()
+        .format(DateTimeFormatter.ofPattern("yyyyMMddHH"));
+    return Long.parseLong(time);
+  }
+
+
   public Page<EventPostResponse> recommendByAI(
       Long userId,
       @Nullable EventType eventType,
       boolean today,
       Pageable pageable
   ) {
+    long seed = hourlySeed();
     // 0) 유효성
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
     Long regionId = user.getRegion().getId();
+
+    // 광고 추가
+    List<Long> adIds;
+    if (today) {
+      ZoneId KST = ZoneId.of("Asia/Seoul");
+      LocalDateTime startOfDay = LocalDate.now(KST).atStartOfDay();
+      LocalDateTime endOfDay = LocalDate.now(KST).atTime(LocalTime.MAX);
+
+      adIds = eventPostRepository.findActiveAdPostIds(regionId, eventType, startOfDay, endOfDay,
+          seed);
+
+    } else if (eventType != null) {
+      adIds = eventPostRepository.findAdPostIdsByType(regionId, eventType, seed);
+    } else {
+      adIds = eventPostRepository.findAdPostIds(regionId, seed);
+    }
 
     // 1) 후보 IDs 조회 (요구사항 우선순위 적용)
     List<Long> candidateIds;
@@ -76,53 +102,39 @@ public class RecommendationService {
       candidateIds = postEmbeddingRepository.findPostIdsByRegionId(regionId);
     }
 
-    long total = candidateIds.size();
+    candidateIds.removeAll(adIds);
+
+    long total = adIds.size() + candidateIds.size();
     if (total == 0) {
       return Page.empty(pageable);
     }
 
-    int page = pageable.getPageNumber();
-    int size = pageable.getPageSize();
-    int from = page * size;
-
-    // 전체 후보 개수(total)보다 시작 인덱스(from)가 크거나 같으면 더 이상 데이터가 없으므로 빈 페이지 반환
-    if (from >= total) {
-      return Page.empty(pageable);
-    }
-
-    // 2) 사용자 임베딩 로드
+    // 3) 사용자 임베딩
     List<Float> userVec = userEmbeddingService.loadAsFloatList(userId);
 
-    // --- 콜드스타트: 최신순 페이징 ---
+    // --- 광고 먼저 로드 ---
+    List<EventPost> adPosts = eventPostSearchService.loadInOrder(adIds);
+    List<EventPostResponse> adResponses = toResponses(userId, adPosts);
+
+    // --- 이후 AI 추천 (기존 로직 그대로) ---
+    List<EventPostResponse> aiResponses;
     if (userVec == null) {
-      List<EventPost> rows = eventPostRepository.findRecentByIdsPage(
-          candidateIds, from, size
-      );
-      List<EventPostResponse> content = toResponses(userId, rows);
-      return new PageImpl<>(content, pageable, total);
+      List<EventPost> rows = eventPostRepository.findRecentByIdsPage(candidateIds, 0,
+          pageable.getPageSize());
+      aiResponses = toResponses(userId, rows);
+    } else {
+      int needTop = (int) Math.min((long) (pageable.getPageNumber() + 1) * pageable.getPageSize(),
+          candidateIds.size());
+      List<Long> rankedTopIds = aiRerankService.recommendByAI(candidateIds, userVec, needTop);
+      List<EventPost> posts = eventPostSearchService.loadInOrder(rankedTopIds);
+      aiResponses = toResponses(userId, posts);
     }
 
-    // --- 재랭킹: 과조회 후 컷 ---
-    int needTop = (int) Math.min((long) (page + 1) * size, total);
+    // 4) 광고 + 추천 합치기
+    List<EventPostResponse> content = new ArrayList<>();
+    content.addAll(adResponses);
+    content.addAll(aiResponses);
 
-    // FAISS 서브셋 검색 (Top needTop)
-    List<Long> rankedTopIds = aiRerankService.recommendByAI(candidateIds, userVec, needTop);
-    if (rankedTopIds.isEmpty()) {
-      return Page.empty(pageable);
-    }
-
-    int to = Math.min(from + size, rankedTopIds.size());
-    if (from >= to) {
-      return Page.empty(pageable);
-    }
-
-    List<Long> pageIds = rankedTopIds.subList(from, to);
-
-    // 4) 순서 보존 로드
-    List<EventPost> posts = eventPostSearchService.loadInOrder(pageIds);
-
-    // 5) 응답 변환
-    List<EventPostResponse> content = toResponses(userId, posts);
     return new PageImpl<>(content, pageable, total);
   }
 
