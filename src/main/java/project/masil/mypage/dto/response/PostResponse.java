@@ -43,6 +43,9 @@ public class PostResponse {
   @Schema(description = "종료 시간", example = "2025-08-02T10:00:00")
   private LocalDateTime endAt;
 
+  @Schema(description = "이벤트 게시글 생성시각")
+  private LocalDateTime createdAt;
+
   @Schema(description = "관심 목록 수", example = "129")
   private int favoriteCount;
 
