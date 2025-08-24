@@ -34,7 +34,7 @@ public class MyPageController {
   @Operation(summary = "내가 작성한 게시글 목록 조회",
       description = "내가 작성한 게시글 목록을 조회합니다.")
   @GetMapping("/posts")
-  public ResponseEntity<BaseResponse<Page<PostResponse>>> getClubPostListByEventId(
+  public ResponseEntity<BaseResponse<Page<PostResponse>>> getMyPostList(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int size,
