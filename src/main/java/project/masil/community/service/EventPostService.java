@@ -219,14 +219,19 @@ public class EventPostService {
    * @return
    */
   @Transactional(readOnly = true)
-  public Page<EventPostResponse> getEventAll(Long regionId, Pageable pageable, Long userId, EventSort sort) {
+  public Page<EventPostResponse> getEventAll(Long regionId, Pageable pageable, Long userId,
+      EventSort sort) {
     // 시드 랜덤 정렬 쿼리 적용
     long seed = hourlySeed();
-    if (sort == null) sort = EventSort.DATE;
+    if (sort == null) {
+      sort = EventSort.DATE;
+    }
 
     Page<EventPost> page = switch (sort) {
-      case COMMENTS -> eventPostRepository.findSeededUpFirstOrderByComments(regionId, seed, pageable);
-      case POPULARITY -> eventPostRepository.findSeededUpFirstOrderByPopularity(regionId, seed, pageable);
+      case COMMENTS ->
+          eventPostRepository.findSeededUpFirstOrderByComments(regionId, seed, pageable);
+      case POPULARITY ->
+          eventPostRepository.findSeededUpFirstOrderByPopularity(regionId, seed, pageable);
       case DATE -> eventPostRepository.findSeededUpFirst(regionId, seed, pageable);
     };
 
@@ -247,7 +252,9 @@ public class EventPostService {
 
     // 시드 랜덤 정렬 쿼리 적용
     long seed = hourlySeed();
-    if (sort == null) sort = EventSort.DATE;
+    if (sort == null) {
+      sort = EventSort.DATE;
+    }
 
     Page<EventPost> page = switch (sort) {
       case COMMENTS -> eventPostRepository
@@ -261,8 +268,6 @@ public class EventPostService {
     return mapToResponse(page, userId);
 
   }
-
-
 
 
   /**
@@ -299,18 +304,15 @@ public class EventPostService {
     String oldContent = eventPost.getContent();
     Long oldRegionId = eventPost.getRegion().getId();
 
-    LocalDateTime startAtKst = request.getStartAt();
-    LocalDateTime endAtKst = request.getEndAt();
-
-    //업데이트
+    // 업데이트
     eventPost.updateEventPost(
         region,
         request.getEventType(),
         request.getTitle(),
         request.getContent(),
         request.getLocation(),
-        startAtKst,
-        endAtKst
+        request.getStartAt(),
+        request.getEndAt()
     );
 
     // 이미지: null/빈 리스트면 유지, 있으면 추가만
@@ -326,10 +328,9 @@ public class EventPostService {
     }
 
     // 임베딩 개싱 필요 여부 판단
-    boolean titleChanged = !Objects.equals(oldTitle, eventPost.getTitle());
-    boolean contentChanged = !Objects.equals(oldContent, eventPost.getContent());
-    boolean regionChanged = !Objects.equals(oldRegionId, region.getId());
-    boolean needEmbeddingUpdate = titleChanged || contentChanged || regionChanged;
+    boolean changed = !Objects.equals(oldTitle, eventPost.getTitle())
+        || !Objects.equals(oldContent, eventPost.getContent())
+        || !Objects.equals(oldRegionId, region.getId());
 
     int bodyLen = effectiveLen(eventPost.getContent());
 
@@ -338,30 +339,18 @@ public class EventPostService {
     String title = eventPost.getTitle();
     String content = eventPost.getContent();
 
-    // 트랜잭션 커밋 이후 외부 반영
-    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-      @Override
-      public void afterCommit() {
-        try {
-          if (!needEmbeddingUpdate) {
-            // 변경 없으면 아무것도 안 함
-            return;
-          }
-          if (bodyLen >= LEN_THRESHOLD) {
-            // 업서트: DB(LONGBLOB) 저장 + FAISS upsert (EmbeddingPipelineService가 다 함)
-            embeddingPipelineService.upsertPost(postId, regionId, title, content);
-            log.info("[AI] (update) upsert postId={} (bodyLen={})", postId, bodyLen);
-          } else {
-            // 길이 짧으면 검색 품질 위해 제거(정책 선택 가능)
-            embeddingPipelineService.removePost(postId);
-            log.info("[AI] (update) remove postId={} (bodyLen={} < {})", postId, bodyLen,
-                LEN_THRESHOLD);
-          }
-        } catch (Exception e) {
-          log.error("임베딩/FAISS 업데이트 실패 postId={}", postId, e);
+    // 커밋 후 단일 이벤트 발행(요약+임베딩은 리스너에서 처리)
+    if (changed) {
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+          publisher.publishEvent(
+              new EventCreatedEvent(postId, regionId, title, content));
+          log.info("[AI] (update) published EventPostChangedEvent postId={} changed={}", postId,
+              true);
         }
-      }
-    });
+      });
+    }
 
     boolean isLiked = favoriteRepository.existsByUserIdAndPostId(userId, eventPost.getId());
     return converter.toResponse(eventPost, isLiked, true,
