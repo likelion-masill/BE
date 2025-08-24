@@ -1,6 +1,5 @@
 package project.masil.community.controller;
 
-import com.amazonaws.Response;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -10,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -78,7 +76,7 @@ public class EventPostController {
       @RequestParam(defaultValue = "1") Long regionId, // ← 지역 ID를 받는 파라미터 추가
       @RequestParam(defaultValue = "1") int page,          // ← 1부터 받기
       @RequestParam(defaultValue = "20") int size,
-      @RequestParam(defaultValue = "DATE")EventSort sort // 정렬 옵션 (기본 최신순)
+      @RequestParam(defaultValue = "DATE") EventSort sort // 정렬 옵션 (기본 최신순)
   ) {
     int pageIndex = Math.max(0, page - 1);                 // ← 0 기반으로 변환
     Pageable pageable = PageRequest.of(pageIndex, size); // 정렬은 레포의 ORDER BY가 처리
@@ -108,8 +106,9 @@ public class EventPostController {
 
   }
 
-  @Operation(summary = "오늘의 이벤트 리스트 조회(타입 없음)", description = "startAt~endAt가 오늘(Asia/Seoul)과 겹치는 이벤트만 조회. \n"
-      + "정렬: 활성 UP 최상단 → UP끼리 seed 랜덤 → 최신/댓글/인기 적용.")
+  @Operation(summary = "오늘의 이벤트 리스트 조회(타입 없음)", description =
+      "startAt~endAt가 오늘(Asia/Seoul)과 겹치는 이벤트만 조회. \n"
+          + "정렬: 활성 UP 최상단 → UP끼리 seed 랜덤 → 최신/댓글/인기 적용.")
   @GetMapping("/today")
   public ResponseEntity<BaseResponse<Page<EventPostResponse>>> getTodayEvents(
       @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -121,7 +120,8 @@ public class EventPostController {
     int pageIndex = Math.max(0, page - 1);
     Pageable pageable = PageRequest.of(pageIndex, size);
 
-    Page<EventPostResponse> todayEvents = eventPostService.getTodayEvents(regionId, sort, pageable);
+    Page<EventPostResponse> todayEvents = eventPostService.getTodayEvents(regionId,
+        userDetails.getUser().getId(), sort, pageable);
     return ResponseEntity.ok(BaseResponse.success("오늘의 이벤트 리스트 조회 성공", todayEvents));
   }
 
