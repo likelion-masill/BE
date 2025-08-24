@@ -9,18 +9,28 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import project.masil.community.entity.EventPost;
+import project.masil.community.exception.EventErrorCode;
 import project.masil.community.repository.EventPostRepository;
 import project.masil.community.repository.PostEmbeddingRepository;
+import project.masil.community.repository.PostRepository;
 import project.masil.embedding.service.EmbeddingPipelineService;
+import project.masil.global.exception.CustomException;
+import project.masil.infrastructure.client.ai.AiClient;
+import project.masil.infrastructure.client.ai.dto.AiSummarizeRequest;
+import project.masil.infrastructure.client.ai.dto.AiSummarizeResponse;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class EmbeddingBatchService {
 
+  private final AiClient aiClient;
   private final EventPostRepository eventPostRepository;
+  private final EventPostUpdater updater;
   private final PostEmbeddingRepository postEmbeddingRepository;
   private final EmbeddingPipelineService embeddingPipelineService;
+  private final PostRepository postRepository;
 
 
   @Transactional
@@ -43,6 +53,18 @@ public class EmbeddingBatchService {
         long regionIdMeta = (ep.getRegion() != null ? ep.getRegion().getId() : 0L);
 
         try {
+          EventPost eventPost = eventPostRepository.findById(postId)
+              .orElseThrow(() -> new CustomException(EventErrorCode.EVENT_NOT_FOUND));
+
+          AiSummarizeRequest req = new AiSummarizeRequest(
+              eventPost.getContent(), 5, 10, 0.3, 300
+          );
+          AiSummarizeResponse res = aiClient.summarize(req);
+          if (res != null && "success".equalsIgnoreCase(res.getStatus()) && res.getData() != null) {
+            String summary = res.getData().trim();
+            updater.updateSummary(eventPost.getId(), summary);
+          }
+
           // regionId가 메타로만 필요할 때
           embeddingPipelineService.upsertPost(postId, regionIdMeta, ep.getTitle(), ep.getContent());
 

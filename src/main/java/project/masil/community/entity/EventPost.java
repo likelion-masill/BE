@@ -46,8 +46,9 @@ public class EventPost extends Post {
   @Column(nullable = false)
   private LocalDateTime endAt;
 
-  @Column(name = "summary")
+  @Column(name = "summary", columnDefinition = "TEXT")
   private String summary;
+
 
   @Builder.Default
   @Column(nullable = false)
@@ -83,7 +84,6 @@ public class EventPost extends Post {
   }
 
 
-
   @ElementCollection
   @CollectionTable(name = "event_images", joinColumns = @JoinColumn(name = "event_id"))
   @Column(name = "image_url", nullable = false)         // 값 컬럼 이름 지정
@@ -110,7 +110,9 @@ public class EventPost extends Post {
 
   //이미지 추가 메소드(수정에서 사용)
   public void addImages(List<String> urls) {
-    if (urls == null || urls.isEmpty()) return;
+    if (urls == null || urls.isEmpty()) {
+      return;
+    }
     this.eventImages.addAll(urls);
   }
 
