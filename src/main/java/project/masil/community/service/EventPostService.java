@@ -274,9 +274,9 @@ public class EventPostService {
   }
 
   /**
-   * 오늘의 이벤트 조회 (정렬에도 지원)
-   * - 기간 겹침: startAt <= endOfDay && endAt >= startOfDay
-   * - 정렬: 활성 UP 최상단 -> UP끼리 seed 랜덤 -> (최신순/댓글순/인기순)
+   * 오늘의 이벤트 조회 (정렬에도 지원) - 기간 겹침: startAt <= endOfDay && endAt >= startOfDay - 정렬: 활성 UP 최상단 ->
+   * UP끼리 seed 랜덤 -> (최신순/댓글순/인기순)
+   *
    * @param regionId
    * @param sort
    * @param pageable
@@ -285,33 +285,32 @@ public class EventPostService {
   @Transactional(readOnly = true)
   public Page<EventPostResponse> getTodayEvents(
       Long regionId,
+      Long userId,
       EventSort sort,
       Pageable pageable
   ) {
     ZoneId zone = ZoneId.of("Asia/Seoul");
-    LocalDateTime startOfDay = LocalDate.now(zone).atStartOfDay(); // 오늘 00:00:00 (예: 2025-08-24T00:00:00)
-    LocalDateTime endOfDay = startOfDay.plusDays(1).minusNanos(1); // 오늘 23:59:59.999999999 (예: 2025-08-24T23:59:59.999999999)
+    LocalDateTime startOfDay = LocalDate.now(zone)
+        .atStartOfDay(); // 오늘 00:00:00 (예: 2025-08-24T00:00:00)
+    LocalDateTime endOfDay = startOfDay.plusDays(1)
+        .minusNanos(1); // 오늘 23:59:59.999999999 (예: 2025-08-24T23:59:59.999999999)
 
     long seed = hourlySeed(zone);
     Page<EventPost> page = switch (sort) {
-      case COMMENTS -> page = eventPostRepository.findTodaySeededUpFirstOrderByComments(regionId, startOfDay, endOfDay, seed, pageable);
-      case POPULARITY -> page = eventPostRepository.findTodaySeededUpFirstOrderByPopularity(regionId, startOfDay, endOfDay, seed, pageable);
-      case DATE -> page = eventPostRepository.findTodaySeededUpFirst(regionId, startOfDay, endOfDay, seed, pageable);
+      case COMMENTS ->
+          page = eventPostRepository.findTodaySeededUpFirstOrderByComments(regionId, startOfDay,
+              endOfDay, seed, pageable);
+      case POPULARITY ->
+          page = eventPostRepository.findTodaySeededUpFirstOrderByPopularity(regionId, startOfDay,
+              endOfDay, seed, pageable);
+      case DATE ->
+          page = eventPostRepository.findTodaySeededUpFirst(regionId, startOfDay, endOfDay, seed,
+              pageable);
     };
 
     page.forEach(EventPost::refreshUpStatusByNow); // 조회 시 만료된 UP 자동해제
 
-    // 로그인 무관하므로 좋아요/작성자 여부는 false 고정
-    return page.map(post -> converter.toResponse(
-        post,
-        /* isLiked */ false,
-        /* isAuthor */ false,
-        RegionConverter.toRegionResponse(post.getRegion())
-    ));
-
-
-
-
+    return mapToResponse(page, userId);
 
   }
 
